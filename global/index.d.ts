@@ -243,40 +243,42 @@ declare namespace browser.commands {
 declare namespace browser.menus {
   type ContextType =
     | "all"
-    | "audio"
-    | "bookmarks"
-    | "browser_action"
-    | "editable"
-    | "frame"
-    | "image"
-    // | "launcher" unsupported
-    | "link"
     | "page"
-    | "page_action"
-    | "password"
+    | "frame"
     | "selection"
+    | "link"
+    | "editable"
+    | "password"
+    | "image"
+    | "video"
+    | "audio"
+    | "browser_action"
     | "tab"
-    | "tools_menu"
-    | "video";
+    | "message_list"
+    | "folder_pane";
 
   type ItemType = "normal" | "checkbox" | "radio" | "separator";
 
   type OnClickData = {
-    bookmarkId?: string;
-    checked?: boolean;
     editable: boolean;
+    menuItemId: number | string;
+    modifiers: "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl"[];
+    button?: number;
+    checked?: boolean;
+    displayedFolder?: MailFolder;
     frameId?: number;
     frameUrl?: string;
     linkText?: string;
     linkUrl?: string;
     mediaType?: string;
-    menuItemId: number | string;
-    modifiers: string[];
     pageUrl?: string;
     parentMenuItemId?: number | string;
+    selectedFolder?: MailFolder;
+    selectedMessages?: MessageList;
     selectionText?: string;
     srcUrl?: string;
     targetElementId?: number;
+    viewType?: browser.extension.ViewType;
     wasChecked?: boolean;
   };
 
@@ -286,9 +288,9 @@ declare namespace browser.menus {
     createProperties: {
       checked?: boolean;
       command?:
-        | "_execute_browser_action"
-        | "_execute_page_action"
-        | "_execute_sidebar_action";
+        | "_execute_browser_action";
+        // | "_execute_page_action" unsupported
+        // | "_execute_sidebar_action" unsupported
       contexts?: ContextType[];
       documentUrlPatterns?: string[];
       enabled?: boolean;
@@ -299,46 +301,51 @@ declare namespace browser.menus {
       targetUrlPatterns?: string[];
       title?: string;
       type?: ItemType;
+      viewTypes?: browser.extension.ViewType[];
       visible?: boolean;
     },
     callback?: () => void
-  ): number | string;
-
-  function getTargetElement(targetElementId: number): object | null;
-
-  function refresh(): Promise<void>;
-
-  function remove(menuItemId: number | string): Promise<void>;
-
-  function removeAll(): Promise<void>;
+  ): Promise<number | string>;
 
   function update(
     id: number | string,
     updateProperties: {
       checked?: boolean;
-      command?:
-        | "_execute_browser_action"
-        | "_execute_page_action"
-        | "_execute_sidebar_action";
       contexts?: ContextType[];
       documentUrlPatterns?: string[];
       enabled?: boolean;
+      icons?: object;
       onclick?: (info: OnClickData, tab: browser.tabs.Tab) => void;
       parentId?: number | string;
       targetUrlPatterns?: string[];
       title?: string;
       type?: ItemType;
+      viewTypes?: browser.extension.ViewType[];
       visible?: boolean;
+    }
+  ): Promise<void>; // @@@ Promise?
+
+  function remove(menuItemId: number | string): Promise<void>;
+
+  function removeAll(): Promise<void>;
+
+  function overrideContext(
+    contextOptions: {
+      contenxt?: "tab";
+      showDefaults?: boolean;
+      tabId?: number;
     }
   ): Promise<void>;
 
+  function refresh(): Promise<void>;
+
   const onClicked: EvListener<
-    (info: OnClickData, tab: browser.tabs.Tab) => void
+    (info: OnClickData, tab?: browser.tabs.Tab) => void
   >;
 
-  const onHidden: EvListener<() => void>;
-
   const onShown: EvListener<(info: OnClickData, tab: browser.tabs.Tab) => void>;
+
+  const onHidden: EvListener<() => void>;
 }
 
 declare namespace browser.contextualIdentities {
@@ -694,7 +701,7 @@ declare namespace browser.events {
 }
 
 declare namespace browser.extension {
-  type ViewType = "tab" | "notification" | "popup";
+  type ViewType = "tab" | "popup" | "sidebar"; // | "notification";
 
   const lastError: string | null;
   const inIncognitoContext: boolean;
@@ -2268,4 +2275,75 @@ declare namespace browser.theme {
   function update(windowId: number, theme: Theme): Promise<void>;
   function reset(): Promise<void>;
   function reset(windowId: number): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------------------
+/* eslint-disable no-redeclare */
+/* eslint-disable @typescript-eslint/member-delimiter-style */
+declare namespace browser.folders {
+  type MailFolder = {
+    accountId: string
+    path: string
+    name?: string
+    subFolders?: MailFolder[]
+    type?: string
+  }
+}
+
+declare namespace browser.mailTabs {
+  type MailTab = {
+    active: boolean
+    displayedFolder: browser.folders.MailFolder
+    folderPaneVisible: boolean
+    id: number
+    layout: string
+    messagePaneVisible: boolean
+    sortOrder: string
+    sortType: string
+    windowId: number
+  }
+
+  function query(queryInfo: {
+    active?: boolean
+    currentWindow?: boolean
+    lastFocusedWindow?: boolean
+    windowId?: number
+  }): Promise<MailTab[]>
+
+  function getSelectedMessages(
+    tabId?: number
+  ): Promise<browser.messages.MessageList>
+
+  const onDisplayedFolderChanged: EvListener<() => void>
+  const onSelectedMessagesChanged: EvListener<() => void>
+}
+
+declare namespace browser.messageDisplay {
+  const onMessageDisplayed: EvListener<(
+    tabId: number,
+    message: browser.messages.MessageHeader
+  ) => void>
+}
+
+declare namespace browser.messages {
+  type MessageList = {
+    id: string
+    messages: MessageHeader[]
+  }
+
+  type MessageHeader = {
+    author: string
+    bccList: string[]
+    ccList: string[]
+    date: Date
+    flagged: boolean
+    folder: browser.folders.MailFolder
+    id: number
+    junk: boolean
+    junkScore: number
+    read: boolean
+    recipients: string[]
+    subject: string
+    tags: string[]
+  }
 }
