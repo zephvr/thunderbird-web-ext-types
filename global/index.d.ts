@@ -10,68 +10,91 @@ interface EvListener<T extends Function> {
 
 type Listener<T> = EvListener<(arg: T) => void>;
 
-declare namespace browser.accounts { /* TODO: not yet */ }
+declare namespace browser.accounts {
+  type MailAccount = {
+    folders: browser.folders.MailFolder[];
+    id: string;
+    name: string;
+    type: string; // e.g. imap, nntp, or pop3.
+  };
 
-declare namespace browser.addressBooks { /* TODO: not yet */ }
+  function list(): Promise<MailAccount[]>;
+  function get(accountId: string): Promise<MailAccount>;
+}
+
+declare namespace browser.addressBooks {
+  type NodeType =
+    | "addressBook"
+    | "contact"
+    | "mailingList";
+
+  type AddressBookNode = {
+    id: string;
+    name: string;
+    type: NodeType;
+    contacts?: browser.contacts.ContactNode[];
+    mailingLists?: browser.mailingLists.MailingListNode[];
+    parentId?: string;
+    readOnly?: boolean;
+  };
+
+  type AddressBookProperties = { name: string, [key: string]: string };
+
+  function openUI(): Promise<void>;
+  function closeUI(): Promise<void>;
+  function list(complete?: boolean): Promise<AddressBookNode[]>;
+  function get(id: string, complete?: boolean): Promise<AddressBookNode>;
+  function create(properties: AddressBookProperties): Promise<string>;
+  function update(id: string, properties: AddressBookProperties): Promise<void>;
+  // FIXME reverved delete. // function delete(id: string): Promise<void>;
+
+  const onCreated: Listener<AddressBookNode>;
+  const onUpdated: Listener<AddressBookNode>;
+  const onDeleted: Listener<string>;
+}
 
 declare namespace browser.browserAction {
   type ColorArray = [number, number, number, number];
+
+  type Details = {
+    tabId?: number;
+    windowId?: number;
+  };
+
   type ImageDataType = ImageData;
 
-  function setTitle(details: { title: string | null; tabId?: number }): void;
-  function getTitle(details: { tabId?: number }): Promise<string>;
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
-  type IconViaPath = {
-    path: string | { [size: number]: string };
-    tabId?: number;
+  type OnClickData = {
+    modifiers: ModfierType[];
+    button?: number;
   };
 
-  type IconViaImageData = {
-    imageData: ImageDataType | { [size: number]: ImageDataType };
-    tabId?: number;
-  };
-
-  type IconReset = {
-    imageData?: {} | null;
-    path?: {} | null;
-    tabId?: number;
-  };
-
-  function setIcon(
-    details: IconViaPath | IconViaImageData | IconReset
-  ): Promise<void>;
-  function setPopup(details: { popup: string | null; tabId?: number }): void;
-  function getPopup(details: { tabId?: number }): Promise<string>;
-  function openPopup(): Promise<void>;
-  function setBadgeText(details: { text: string | null; tabId?: number }): void;
-  function getBadgeText(details: { tabId?: number }): Promise<string>;
+  function setTitle(details: { title: string | null }): Promise<void>;
+  function getTitle(details: Details): Promise<string>;
+  function setIcon(details: {
+    imageData?: ImageDataType | object;
+    path?: string | object;
+  }): Promise<void>;
+  function setPopup(details: { popup: string | null }): Promise<void>;
+  function getPopup(details: Details): Promise<string>;
+  function setBadgeText(details: { text: string }): Promise<void>;
+  function getBadgeText(details: Details): Promise<string>;
   function setBadgeBackgroundColor(details: {
-    color: string | ColorArray | null;
-    tabId?: number;
-  }): void;
-  function getBadgeBackgroundColor(details: {
-    tabId?: number;
-  }): Promise<ColorArray>;
-  function setBadgeTextColor(details: {
-    color: string | ColorArray;
-    tabId?: number;
-  }): void;
-  function setBadgeTextColor(details: {
-    color: string | ColorArray;
-    windowId?: number;
-  }): void;
-  function setBadgeTextColor(details: { color: null; tabId?: number }): void;
-  function getBadgeTextColor(details: { tabId?: string }): Promise<ColorArray>;
-  function getBadgeTextColor(details: {
-    windowId?: string;
-  }): Promise<ColorArray>;
-  function enable(tabId?: number): void;
-  function disable(tabId?: number): void;
+    color: string | ColorArray | null
+  }): Promise<void>;
+  function getBadgeBackgroundColor(details: Details): Promise<ColorArray>;
+  function enable(tabId?: number): Promise<void>;
+  function disable(tabId?: number): Promise<void>;
+  function isEnabled(details: Details): Promise<boolean>;
+  function openPopup(): Promise<void>;
 
-  const onClicked: Listener<browser.tabs.Tab>;
+  const onClicked: EvListener<(tab: browser.tabs.Tab, info?: OnClickData) => void>;
 }
 
-declare namespace browser.cloudFile { /* TODO: not yet. */ }
+declare namespace browser.cloudFile {
+ /* TODO: not yet. */
+}
 
 declare namespace browser.commands {
   type Command = {
@@ -89,7 +112,28 @@ declare namespace browser.compose { /* TODO: not yet. */ }
 
 declare namespace browser.composeAction { /* TODO: not yet. */ }
 
-declare namespace browser.contacts { /* TODO: not yet. */ }
+declare namespace browser.contacts {
+  type ContactNode = {
+    id: string;
+    properties: ContactProperties;
+    type: browser.addressBooks.NodeType;
+    parentId?: string;
+    readOnly?: boolean;
+  };
+
+  type ContactProperties = object[]; // e.g. [{ PreferDisplayName?: string PreferMailFormat?: string, PrimaryEmail?: string, ... }, ... ]
+
+  function list(parentId: string): Promise<ContactNode[]>;
+  function quickSearch(parentId: string | null, searchString: string): Promise<ContactNode[]>;
+  function get(id: string): Promise<ContactNode>;
+  function create(parentId: string, id: string | null, properties: ContactProperties): Promise<string>;
+  function update(id: string, properties: ContactProperties): Promise<void>;
+  // FIXME reverved delete. // function delete(id: string): Promise<void>;
+
+  const onCreated: EvListener<(node: ContactNode, id: string) => void>;
+  const onUpdated: EvListener<(node: ContactNode) => void>;
+  const onDeleted: EvListener<(parentId: string, id: string) => void>;
+}
 
 declare namespace browser.folders {
   type MailFolder = {
@@ -103,7 +147,20 @@ declare namespace browser.folders {
 
 declare namespace browser.legacy { /* TODO: not yet. */ }
 
-declare namespace browser.mailingLists { /* TODO: not yet. */ }
+declare namespace browser.mailingLists {
+  /* TODO: not yet. */
+
+  type MailingListNode = {
+    description: string;
+    id: string;
+    name: string;
+    nickName: string;
+    type: browser.addressBooks.NodeType;
+    contacts?: browser.contacts.ContactNode[];
+    parentId?: string;
+    readOnly?: boolean;
+  };
+}
 
 declare namespace browser.mailTabs {
   type MailTab = {
