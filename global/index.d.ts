@@ -23,11 +23,6 @@ declare namespace browser.accounts {
 }
 
 declare namespace browser.addressBooks {
-  type NodeType =
-    | "addressBook"
-    | "contact"
-    | "mailingList";
-
   type AddressBookNode = {
     id: string;
     name: string;
@@ -38,6 +33,11 @@ declare namespace browser.addressBooks {
     readOnly?: boolean;
   };
 
+  type NodeType =
+    | "addressBook"
+    | "contact"
+    | "mailingList";
+
   type AddressBookProperties = { name: string, [key: string]: string };
 
   function openUI(): Promise<void>;
@@ -46,7 +46,7 @@ declare namespace browser.addressBooks {
   function get(id: string, complete?: boolean): Promise<AddressBookNode>;
   function create(properties: AddressBookProperties): Promise<string>;
   function update(id: string, properties: AddressBookProperties): Promise<void>;
-  // FIXME reverved delete. // function delete(id: string): Promise<void>;
+  // function delete(id: string): Promise<void>; // FIXME: reverved "delete".
 
   const onCreated: Listener<AddressBookNode>;
   const onUpdated: Listener<AddressBookNode>;
@@ -63,12 +63,12 @@ declare namespace browser.browserAction {
 
   type ImageDataType = ImageData;
 
-  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
-
   type OnClickData = {
     modifiers: ModfierType[];
     button?: number;
   };
+
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
   function setTitle(details: { title: string | null }): Promise<void>;
   function getTitle(details: Details): Promise<string>;
@@ -93,7 +93,37 @@ declare namespace browser.browserAction {
 }
 
 declare namespace browser.cloudFile {
- /* TODO: not yet. */
+  type CloudFile = {
+    data: ArrayBuffer | File;
+    id: number;
+    name: string;
+  };
+
+  type CloudFileAccount = {
+    configured: boolean;
+    id: string;
+    managementUrl: string;
+    name: string;
+    spaceRemaining?: number;
+    spaceUsed?: number;
+    uploadSizeLimit?: number;
+  };
+
+  function getAccount(accountId: string): Promise<CloudFileAccount>;
+  function getAllAccounts(): Promise<CloudFileAccount[]>;
+  function updateAccount(accountId: string, updateProperties: {
+    configured?: boolean;
+    managementUrl?: string;
+    spaceRemaining?: number;
+    spaceUsed?: number;
+    uploadSizeLimit?: number;
+  }): Promise<CloudFileAccount>;
+
+  const onFileUpload: EvListener<(account: CloudFileAccount, fileInfo: CloudFile) => void>;
+  const onFileUploadAbort: EvListener<(account: CloudFileAccount, fileId: number) => void>;
+  const onFileDeleted: EvListener<(account: CloudFileAccount, fileId: number) => void>;
+  const onAccountAdded: EvListener<(account: CloudFileAccount) => void>;
+  const onAccountDeleted: EvListener<(accountId: string) => void>;
 }
 
 declare namespace browser.commands {
@@ -108,9 +138,71 @@ declare namespace browser.commands {
   const onCommand: Listener<string>;
 }
 
-declare namespace browser.compose { /* TODO: not yet. */ }
+declare namespace browser.compose {
+  type ComposeDetails = {
+    bcc: ComposeRecipientList;
+    body: string;
+    cc: ComposeRecipientList;
+    followupTo: ComposeRecipientList;
+    isPlainText: boolean;
+    newsgroups: string | string[];
+    plainTextBody: string;
+    replyTo: ComposeRecipientList;
+    subject: string;
+    to: ComposeRecipientList;
+  };
 
-declare namespace browser.composeAction { /* TODO: not yet. */ }
+  type ComposeRecipient = string | { id: string; type: "contact" | "mailingList"; };
+
+  type ComposeRecipientList = string | ComposeRecipient[];
+
+  function beginNew(details?: ComposeDetails): Promise<void>;
+  function beginReply(messageId?: number, replyType?: "replyToSender" | "replyToList" | "replyToAll"): Promise<void>;
+  function beginForward(messageId?: number, forwardType?: "forwardInline" | "forwardAsAttachment", details?: ComposeDetails): Promise<void>;
+  function getComposeDetails(tabId: number): Promise<ComposeDetails>;
+  function setComposeDetails(tabId: number, details: ComposeDetails): Promise<void>;
+
+  const onBeforeSend: EvListener<(tab: browser.tabs.Tab, details: ComposeDetails) => { cancel?: boolean; details?: ComposeDetails; }>;
+}
+
+declare namespace browser.composeAction {
+  type ColorArray = [number, number, number, number];
+
+  type Details = {
+    tabId?: number;
+    windowId?: number;
+  };
+
+  type ImageDataType = ImageData;
+
+  type OnClickData = {
+    modifiers: ModfierType[];
+    button?: number;
+  };
+
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
+
+  function setTitle(details: { title: string | null }): Promise<void>;
+  function getTitle(details: Details): Promise<string>;
+  function setIcon(details: {
+    imageData?: ImageDataType | object;
+    path?: string | object;
+  }): Promise<void>;
+  function setPopup(details: { popup: string | null }): Promise<void>;
+  function getPopup(details: Details): Promise<string>;
+  function setBadgeText(details: { text: string }): Promise<void>;
+  function getBadgeText(details: Details): Promise<string>;
+  function setBadgeBackgroundColor(details: {
+    color: string | ColorArray | null
+  }): Promise<void>;
+  function getBadgeBackgroundColor(details: Details): Promise<ColorArray>;
+  function enable(tabId?: number): Promise<void>;
+  function disable(tabId?: number): Promise<void>;
+  function isEnabled(details: Details): Promise<boolean>;
+  function openPopup(): Promise<void>;
+
+  const onClicked: EvListener<(tab: browser.tabs.Tab, info?: OnClickData) => void>;
+}
 
 declare namespace browser.contacts {
   type ContactNode = {
@@ -124,11 +216,13 @@ declare namespace browser.contacts {
   type ContactProperties = object[]; // e.g. [{ PreferDisplayName?: string PreferMailFormat?: string, PrimaryEmail?: string, ... }, ... ]
 
   function list(parentId: string): Promise<ContactNode[]>;
-  function quickSearch(parentId: string | null, searchString: string): Promise<ContactNode[]>;
+  function quickSearch(parentId: string, searchString: string): Promise<ContactNode[]>;
+  function quickSearch(searchString: string): Promise<ContactNode[]>;
   function get(id: string): Promise<ContactNode>;
   function create(parentId: string, id: string | null, properties: ContactProperties): Promise<string>;
+  function create(parentId: string, properties: ContactProperties): Promise<string>;
   function update(id: string, properties: ContactProperties): Promise<void>;
-  // FIXME reverved delete. // function delete(id: string): Promise<void>;
+  // function delete(id: string): Promise<void>; // FIXME: reverved "delete".
 
   const onCreated: EvListener<(node: ContactNode, id: string) => void>;
   const onUpdated: EvListener<(node: ContactNode) => void>;
@@ -141,15 +235,26 @@ declare namespace browser.folders {
     path: string;
     name?: string;
     subFolders?: MailFolder[];
-    type?: string;
-  }
+    type?:
+      | "inbox"
+      | "drafts"
+      | "sent"
+      | "trash"
+      | "templates"
+      | "archives"
+      | "junk"
+      | "outbox";
+  };
+
+  function create(parentFolder: MailFolder, childName: string): Promise<void>;
+  function rename(folder: MailFolder, newName: string): Promise<void>;
+  // function delete(folder: MailFolder): Promise<void>; // FIXME: reverved "delete".
 }
 
-declare namespace browser.legacy { /* TODO: not yet. */ }
+// NOTE: can't declare types
+// declare namespace browser.legacy { }
 
 declare namespace browser.mailingLists {
-  /* TODO: not yet. */
-
   type MailingListNode = {
     description: string;
     id: string;
@@ -160,6 +265,32 @@ declare namespace browser.mailingLists {
     parentId?: string;
     readOnly?: boolean;
   };
+
+  function list(parentId: string): Promise<MailingListNode[]>;
+  function get(id: string): Promise<MailingListNode>;
+
+  function create(parentId: string, properties: {
+    name: string;
+    description?: string;
+    nickName?: string;
+  }): Promise<string>;
+
+  function update(id: string, properties: {
+    name: string;
+    description?: string;
+    nickName?: string;
+  }): Promise<void>;
+
+  // function delete(id: string): Promise<void>; // FIXME: reverved "delete".
+  function addMember(id: string, contactId: string): Promise<void>;
+  function listMembers(id: string): Promise<browser.contacts.ContactNode[]>;
+  function removeMember(id: string, contactId: string): Promise<void>;
+
+  const onCreated: Listener<MailingListNode>;
+  const onUpdated: Listener<MailingListNode>;
+  const onDeleted: EvListener<(parentId: string, id: string) => void>;
+  const onMemberAdded: Listener<MailingListNode>;
+  const onMemberRemoved: EvListener<(parentId: string, id: string) => void>;
 }
 
 declare namespace browser.mailTabs {
@@ -168,29 +299,137 @@ declare namespace browser.mailTabs {
     displayedFolder: browser.folders.MailFolder;
     folderPaneVisible: boolean;
     id: number;
-    layout: string;
+    layout: "standard" | "wide" | "vertical";
     messagePaneVisible: boolean;
-    sortOrder: string;
-    sortType: string;
+    sortOrder: "none" | "ascending" | "descending";
+    sortType:
+      | "none"
+      | "date"
+      | "subject"
+      | "author"
+      | "id"
+      | "thread"
+      | "priority"
+      | "status"
+      | "size"
+      | "flagged"
+      | "unread"
+      | "recipient"
+      | "location"
+      | "tags"
+      | "junkStatus"
+      | "attachments"
+      | "account"
+      | "custom"
+      | "received"
+      | "correspondent";
     windowId: number;
-  }
+  };
+
+  type QuickFilterTextDetail = {
+    text: string;
+    author?: boolean;
+    body?: boolean;
+    recipients?: boolean;
+    subject?: boolean;
+  };
 
   function query(queryInfo: {
     active?: boolean;
     currentWindow?: boolean;
     lastFocusedWindow?: boolean;
     windowId?: number;
-  }): Promise<MailTab[]>
+  }): Promise<MailTab[]>;
+
+  function update(tabId: number, updateProperties: {
+    displayedFolder?: browser.folders.MailFolder;
+    folderPaneVisible?: boolean;
+    layout?: "standard" | "wide" | "vertical";
+    messagePaneVisible?: boolean;
+    sortOrder?:  "none" | "ascending" | "descending";
+    sortType?:
+      | "none"
+      | "date"
+      | "subject"
+      | "author"
+      | "id"
+      | "thread"
+      | "priority"
+      | "status"
+      | "size"
+      | "flagged"
+      | "unread"
+      | "recipient"
+      | "location"
+      | "tags"
+      | "junkStatus"
+      | "attachments"
+      | "account"
+      | "custom"
+      | "received"
+      | "correspondent";
+  }): Promise<void>;
+
+  function update(updateProperties: {
+    displayedFolder?: browser.folders.MailFolder;
+    folderPaneVisible?: boolean;
+    layout?: "standard" | "wide" | "vertical";
+    messagePaneVisible?: boolean;
+    sortOrder?:  "none" | "ascending" | "descending";
+    sortType?:
+      | "none"
+      | "date"
+      | "subject"
+      | "author"
+      | "id"
+      | "thread"
+      | "priority"
+      | "status"
+      | "size"
+      | "flagged"
+      | "unread"
+      | "recipient"
+      | "location"
+      | "tags"
+      | "junkStatus"
+      | "attachments"
+      | "account"
+      | "custom"
+      | "received"
+      | "correspondent";
+  }): Promise<void>;
 
   function getSelectedMessages(
     tabId?: number
-  ): Promise<browser.messages.MessageList>
+  ): Promise<browser.messages.MessageList>;
+
+  function setQuickFilter(tabId: number, properties: {
+    attachment?: boolean;
+    contact?: boolean;
+    flagged?: boolean;
+    show?: boolean;
+    tags?: boolean;
+    text?: browser.mailTabs.QuickFilterTextDetail;
+    unread?: boolean;
+  }): Promise<void>;
+
+  function setQuickFilter(properties: {
+    attachment?: boolean;
+    contact?: boolean;
+    flagged?: boolean;
+    show?: boolean;
+    tags?: boolean;
+    text?: browser.mailTabs.QuickFilterTextDetail;
+    unread?: boolean;
+  }): Promise<void>;
 
   const onDisplayedFolderChanged: EvListener<() => void>
   const onSelectedMessagesChanged: EvListener<() => void>
 }
 
 declare namespace browser.menus {
+  const ACTION_MENU_TOP_LEVEL_LIMIT: number;
+
   type ContextType =
     | "all"
     | "page"
@@ -208,8 +447,6 @@ declare namespace browser.menus {
     | "folder_pane";
 
   type ItemType = "normal" | "checkbox" | "radio" | "separator";
-
-  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
   type OnClickData = {
     editable: boolean;
@@ -234,7 +471,7 @@ declare namespace browser.menus {
     wasChecked?: boolean;
   };
 
-  const ACTION_MENU_TOP_LEVEL_LIMIT: number;
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
   function create(
     createProperties: {
@@ -291,30 +528,60 @@ declare namespace browser.menus {
 
   function refresh(): Promise<void>;
 
-  const onClicked: EvListener<
-    (info: OnClickData, tab?: browser.tabs.Tab) => void
-  >;
-
+  const onClicked: EvListener<(info: OnClickData, tab?: browser.tabs.Tab) => void>;
   const onShown: EvListener<(info: OnClickData, tab: browser.tabs.Tab) => void>;
-
   const onHidden: EvListener<() => void>;
 }
 
 declare namespace browser.messageDisplay {
+  function getDisplayedMessage(tabId: number): Promise<browser.messages.MessageHeader>;
+
   const onMessageDisplayed: EvListener<(
     tabId: number,
     message: browser.messages.MessageHeader
-  ) => void>
+  ) => void>;
 }
 
-declare namespace browser.messageDisplayAction { /* TODO: not yet. */ }
+declare namespace browser.messageDisplayAction {
+  type ColorArray = [number, number, number, number];
+
+  type Details = {
+    tabId?: number;
+    windowId?: number;
+  };
+
+  type ImageDataType = ImageData;
+
+  type OnClickData = {
+    modifiers: ModfierType[];
+    button?: number;
+  };
+
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
+
+  function setTitle(details: { title: string | null }): Promise<void>;
+  function getTitle(details: Details): Promise<string>;
+  function setIcon(details: {
+    imageData?: ImageDataType | object;
+    path?: string | object;
+  }): Promise<void>;
+  function setPopup(details: { popup: string | null }): Promise<void>;
+  function getPopup(details: Details): Promise<string>;
+  function setBadgeText(details: { text: string }): Promise<void>;
+  function getBadgeText(details: Details): Promise<string>;
+  function setBadgeBackgroundColor(details: {
+    color: string | ColorArray | null
+  }): Promise<void>;
+  function getBadgeBackgroundColor(details: Details): Promise<ColorArray>;
+  function enable(tabId?: number): Promise<void>;
+  function disable(tabId?: number): Promise<void>;
+  function isEnabled(details: Details): Promise<boolean>;
+  function openPopup(): Promise<void>;
+
+  const onClicked: EvListener<(tab: browser.tabs.Tab, info?: OnClickData) => void>;
+}
 
 declare namespace browser.messages {
-  type MessageList = {
-    id: string;
-    messages: MessageHeader[];
-  }
-
   type MessageHeader = {
     author: string;
     bccList: string[];
@@ -329,39 +596,85 @@ declare namespace browser.messages {
     recipients: string[];
     subject: string;
     tags: string[];
-  }
+  };
+
+  type MessageList = {
+    id: string;
+    messages: MessageHeader[];
+  };
+
+  type MessagePart = {
+    body: string;
+    contentType: string;
+    headers: object;
+    name: string;
+    partName: string;
+    parts: MessagePart[];
+    size: number;
+  };
+
+  type MessageTag = {
+    color: string;
+    key: string;
+    ordinal: string;
+    tag: string;
+  };
+
+  type TagsDetail = {
+    mode: "all" | "any";
+    tags: object;
+  };
+
+  function list(folder: browser.folders.MailFolder): Promise<MessageList>;
+  function continueList(messageListId: string): Promise<MessageList>;
+  function get(messageId: number): Promise<MessageHeader>;
+  function getFull(messageId: number): Promise<MessagePart>;
+  function getRaw(messageId: number): Promise<string>;
+
+  function query(queryInfo: {
+    author?: string;
+    body?: string;
+    flagged?: boolean;
+    folder?: browser.folders.MailFolder;
+    fromDate?: Date;
+    fromMe?: boolean;
+    fullText?: string;
+    recipients?: string;
+    subject?: string;
+    tags?: TagsDetail;
+    toDate?: Date;
+    toMe?: boolean;
+    unread?: boolean;
+  }): Promise<MessageList>;
+
+  function update(messageId: number, newProperties: {
+    flagged?: boolean;
+    junk?: boolean;
+    read?: boolean;
+    tags?: string[];
+  }): Promise<void>;
+
+  function move(messageIds: number[], destination: browser.folders.MailFolder): Promise<void>;
+  function copy(messageIds: number[], destination: browser.folders.MailFolder): Promise<void>;
+  // function delete(messageIds: number[], skipTrash?: boolean): Promise<void>; // FIXME: reverved "delete".
+  function archive(messageIds: number[]): Promise<void>;
+  function listTags(): Promise<MessageTag[]>;
+
+  const onNewMailReceived: EvListener<(folder: browser.folders.MailFolder, messages: MessageList) => void>;
 }
 
 declare namespace browser.tabs {
-  type MutedInfoReason = "capture" | "extension" | "user";
-  type MutedInfo = {
-    muted: boolean;
-    extensionId?: string;
-    reason: MutedInfoReason;
-  };
-  // TODO: Specify PageSettings properly.
-  type PageSettings = object;
+  const TAB_ID_NONE: number;
+
   type Tab = {
     active: boolean;
-    audible?: boolean;
-    autoDiscardable?: boolean;
-    cookieStoreId?: string;
-    discarded?: boolean;
+    highlighted: boolean;
+    index: number;
+    selected: boolean;
     favIconUrl?: string;
     height?: number;
-    hidden: boolean;
-    highlighted: boolean;
     id?: number;
-    incognito: boolean;
-    index: number;
-    isArticle: boolean;
-    isInReaderMode: boolean;
-    lastAccessed: number;
-    mutedInfo?: MutedInfo;
-    openerTabId?: number;
-    pinned: boolean;
-    selected: boolean;
-    sessionId?: string;
+    mailTab?: boolean;
     status?: string;
     title?: string;
     url?: string;
@@ -370,201 +683,164 @@ declare namespace browser.tabs {
   };
 
   type TabStatus = "loading" | "complete";
-  type WindowType = "normal" | "popup" | "panel" | "devtools";
-  type ZoomSettingsMode = "automatic" | "disabled" | "manual";
-  type ZoomSettingsScope = "per-origin" | "per-tab";
-  type ZoomSettings = {
-    defaultZoomFactor?: number;
-    mode?: ZoomSettingsMode;
-    scope?: ZoomSettingsScope;
+
+  type UpdateFilter = {
+    properties?: UpdatePropertyName[];
+    tabId?: number;
+    urls?: string[];
+    windowId?: number;
   };
 
-  const TAB_ID_NONE: number;
+  type UpdatePropertyName =
+    | "favIconUrl"
+    | "status"
+    | "title";
 
-  function connect(
-    tabId: number,
-    connectInfo?: { name?: string; frameId?: number }
-  ): browser.runtime.Port;
+  type WindowType = "normal" | "popup" | "panel" | "app" | "devtools";
+
+  function get(tabId: number): Promise<Tab>;
+  function getCurrent(): Promise<Tab>;
   function create(createProperties: {
     active?: boolean;
-    cookieStoreId?: string;
     index?: number;
-    openerTabId?: number;
-    pinned?: boolean;
-    // deprecated: selected: boolean,
+    // selected: boolean; // WARN: Deprecated.
     url?: string;
     windowId?: number;
   }): Promise<Tab>;
-  function captureTab(
-    tabId?: number,
-    options?: browser.extensionTypes.ImageDetails
-  ): Promise<string>;
-  function captureVisibleTab(
-    windowId?: number,
-    options?: browser.extensionTypes.ImageDetails
-  ): Promise<string>;
-  function detectLanguage(tabId?: number): Promise<string>;
+
   function duplicate(tabId: number): Promise<Tab>;
-  function executeScript(
-    tabId: number | undefined,
-    details: browser.extensionTypes.InjectDetails
-  ): Promise<object[]>;
-  function get(tabId: number): Promise<Tab>;
-  // deprecated: function getAllInWindow(): x;
-  function getCurrent(): Promise<Tab>;
-  // deprecated: function getSelected(windowId?: number): Promise<browser.tabs.Tab>;
-  function getZoom(tabId?: number): Promise<number>;
-  function getZoomSettings(tabId?: number): Promise<ZoomSettings>;
-  function hide(tabIds: number | number[]): Promise<number[]>;
-  // unsupported: function highlight(highlightInfo: {
-  //     windowId?: number,
-  //     tabs: number[]|number,
-  // }): Promise<browser.windows.Window>;
-  function insertCSS(
-    tabId: number | undefined,
-    details: browser.extensionTypes.InjectDetailsCSS
-  ): Promise<void>;
-  function removeCSS(
-    tabId: number | undefined,
-    details: browser.extensionTypes.InjectDetails
-  ): Promise<void>;
-  function move(
-    tabIds: number | number[],
-    moveProperties: {
-      windowId?: number;
-      index: number;
-    }
-  ): Promise<Tab | Tab[]>;
-  function print(): Promise<void>;
-  function printPreview(): Promise<void>;
+
   function query(queryInfo: {
     active?: boolean;
-    audible?: boolean;
-    // unsupported: autoDiscardable?: boolean,
-    cookieStoreId?: string;
     currentWindow?: boolean;
-    discarded?: boolean;
-    hidden?: boolean;
     highlighted?: boolean;
     index?: number;
-    muted?: boolean;
     lastFocusedWindow?: boolean;
-    pinned?: boolean;
+    mailTab?: boolean;
     status?: TabStatus;
     title?: string;
     url?: string | string[];
     windowId?: number;
     windowType?: WindowType;
   }): Promise<Tab[]>;
-  function reload(
-    tabId?: number,
-    reloadProperties?: { bypassCache?: boolean }
-  ): Promise<void>;
-  function remove(tabIds: number | number[]): Promise<void>;
-  function saveAsPDF(
-    pageSettings: PageSettings
-  ): Promise<"saved" | "replaced" | "canceled" | "not_saved" | "not_replaced">;
-  function sendMessage<T = any, U = object>(
-    tabId: number,
-    message: T,
-    options?: { frameId?: number }
-  ): Promise<U | void>;
-  // deprecated: function sendRequest(): x;
-  function setZoom(
-    tabId: number | undefined,
-    zoomFactor: number
-  ): Promise<void>;
-  function setZoomSettings(
-    tabId: number | undefined,
-    zoomSettings: ZoomSettings
-  ): Promise<void>;
-  function show(tabIds: number | number[]): Promise<void>;
-  function toggleReaderMode(tabId?: number): Promise<void>;
-  function update(
-    tabId: number | undefined,
-    updateProperties: {
-      active?: boolean;
-      // unsupported: autoDiscardable?: boolean,
-      // unsupported: highlighted?: boolean,
-      // unsupported: hidden?: boolean;
-      loadReplace?: boolean;
-      muted?: boolean;
-      openerTabId?: number;
-      pinned?: boolean;
-      // deprecated: selected?: boolean,
-      url?: string;
-    }
-  ): Promise<Tab>;
 
-  const onActivated: Listener<{ tabId: number; windowId: number }>;
-  const onAttached: EvListener<
-    (
-      tabId: number,
-      attachInfo: {
-        newWindowId: number;
-        newPosition: number;
-      }
-    ) => void
-  >;
+  function update(tabId: number, updateProperties: {
+    active?: boolean;
+    url?: string;
+  }): Promise<Tab>;
+
+  function update(updateProperties: {
+    active?: boolean;
+    url?: string;
+  }): Promise<Tab>;
+
+  function move(tabIds: number | number[], moveProperties: {
+      windowId?: number;
+      index: number;
+  }): Promise<Tab | Tab[]>;
+
+  function reload(tabId?: number, reloadProperties?: {
+    bypassCache?: boolean
+  }): Promise<void>;
+
+  function remove(tabIds: number | number[]): Promise<void>;
+
+  function executeScript(
+    tabId: number,
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<object[]>;
+
+  function executeScript(
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<object[]>;
+
+  function insertCSS(
+    tabId: number,
+    details: browser.extensionTypes.InjectDetailsCSS
+  ): Promise<void>;
+
+  function insertCSS(
+    details: browser.extensionTypes.InjectDetailsCSS
+  ): Promise<void>;
+
+  function removeCSS(
+    tabId: number,
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<void>;
+
+  function removeCSS(
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<void>;
+
   const onCreated: Listener<Tab>;
-  const onDetached: EvListener<
-    (
-      tabId: number,
-      detachInfo: {
-        oldWindowId: number;
-        oldPosition: number;
-      }
-    ) => void
-  >;
-  const onHighlighted: Listener<{ windowId: number; tabIds: number[] }>;
-  const onMoved: EvListener<
-    (
-      tabId: number,
-      moveInfo: {
-        windowId: number;
+
+  const onUpdated: EvListener<(
+    tabId: number,
+    changeInfo: {
+      favIconUrl?: string;
+      status?: string;
+      url?: string;
+    },
+    tab: Tab
+  ) => void>;
+
+  const onMoved: EvListener<(
+    tabId: number,
+    moveInfo: {
         fromIndex: number;
         toIndex: number;
-      }
-    ) => void
-  >;
-  const onRemoved: EvListener<
-    (
-      tabId: number,
-      removeInfo: {
         windowId: number;
-        isWindowClosing: boolean;
-      }
-    ) => void
-  >;
-  const onReplaced: EvListener<
-    (addedTabId: number, removedTabId: number) => void
-  >;
-  const onUpdated: EvListener<
-    (
-      tabId: number,
-      changeInfo: {
-        audible?: boolean;
-        discarded?: boolean;
-        favIconUrl?: string;
-        mutedInfo?: MutedInfo;
-        pinned?: boolean;
-        status?: string;
-        title?: string;
-        url?: string;
-      },
-      tab: Tab
-    ) => void
-  >;
-  const onZoomChanged: Listener<{
-    tabId: number;
-    oldZoomFactor: number;
-    newZoomFactor: number;
-    zoomSettings: ZoomSettings;
-  }>;
+    }
+  ) => void>;
+
+  const onActivated: Listener<{ tabId: number; windowId: number }>;
+
+  const onDetached: EvListener<(
+    tabId: number,
+    detachInfo: {
+      oldPosition: number;
+      oldWindowId: number;
+    }
+  ) => void>;
+
+  const onAttached: EvListener<(
+    tabId: number,
+    attachInfo: {
+      newPosition: number;
+      newWindowId: number;
+    }
+  ) => void>;
+
+  const onRemoved: EvListener<(
+    tabId: number,
+    removeInfo: {
+      isWindowClosing: boolean;
+      windowId: number;
+    }
+  ) => void>;
 }
 
 declare namespace browser.windows {
-  type WindowType = "normal" | "popup" | "panel" | "devtools";
+  const WINDOW_ID_NONE: number;
+  const WINDOW_ID_CURRENT: number;
+
+  type CreateType = "normal" | "popup" | "panel" | "detached_panel";
+
+  type Window = {
+    alwaysOnTop: boolean;
+    focused: boolean;
+    incognito: boolean;
+
+    height?: number;
+    id?: number;
+    left?: number;
+    state?: WindowState;
+    tabs?: browser.tabs.Tab[];
+    title?: string;
+    top?: number;
+    type?: WindowType;
+    width?: number;
+  };
 
   type WindowState =
     | "normal"
@@ -573,26 +849,7 @@ declare namespace browser.windows {
     | "fullscreen"
     | "docked";
 
-  type Window = {
-    id?: number;
-    focused: boolean;
-    top?: number;
-    left?: number;
-    width?: number;
-    height?: number;
-    tabs?: browser.tabs.Tab[];
-    incognito: boolean;
-    type?: WindowType;
-    state?: WindowState;
-    alwaysOnTop: boolean;
-    sessionId?: string;
-  };
-
-  type CreateType = "normal" | "popup" | "panel" | "detached_panel";
-
-  const WINDOW_ID_NONE: number;
-
-  const WINDOW_ID_CURRENT: number;
+  type WindowType = "normal" | "popup" | "panel" | "app" | "devtools" | "addressBook" | "messageCompose" | "messageDisplay";
 
   function get(
     windowId: number,
@@ -617,41 +874,38 @@ declare namespace browser.windows {
     windowTypes?: WindowType[];
   }): Promise<browser.windows.Window[]>;
 
-  // TODO: url and tabId should be exclusive
   function create(createData?: {
     allowScriptsToClose?: boolean;
-    url?: string | string[];
-    tabId?: number;
-    left?: number;
-    top?: number;
-    width?: number;
+    focused?: boolean;
     height?: number;
-    // unsupported: focused?: boolean,
     incognito?: boolean;
-    titlePreface?: string;
-    type?: CreateType;
+    left?: number;
     state?: WindowState;
+    tabId?: number;
+    titlePreface?: string;
+    top?: number;
+    type?: CreateType;
+    url?: string | string[];
+    width?: number;
   }): Promise<browser.windows.Window>;
 
   function update(
     windowId: number,
     updateInfo: {
+      drawAttention?: boolean;
+      focused?: boolean;
+      height?: number;
       left?: number;
+      state?: WindowState;
       top?: number;
       width?: number;
-      height?: number;
-      focused?: boolean;
-      drawAttention?: boolean;
-      state?: WindowState;
     }
   ): Promise<browser.windows.Window>;
 
   function remove(windowId: number): Promise<void>;
 
   const onCreated: Listener<browser.windows.Window>;
-
   const onRemoved: Listener<number>;
-
   const onFocusChanged: Listener<number>;
 }
 
@@ -678,8 +932,6 @@ declare namespace browser.contentScripts {
     contentScriptOptions: RegisteredContentScriptOptions
   ): Promise<RegisteredContentScript>;
 }
-
-declare namespace browser.experiments { /* TODO: not yet. */ }
 
 declare namespace browser.extension {
   type ViewType = "tab" | "popup" | "sidebar"; // | "notification";
@@ -820,7 +1072,19 @@ declare namespace browser.permissions {
   // const onRemoved: Listener<Permissions>;
 }
 
-declare namespace browser.pkcs11 { /* TODO: not yet. */ }
+declare namespace browser.pkcs11 {
+  function getModuleSlots(name: string): Promise<{name: string, token?: {
+    name: string;
+    manufacturer: string;
+    HWVersion: string;
+    FWVersion: string;
+    serial: string;
+    isLoggedIn: boolean;
+  }}>;
+  function installModule(name: string, flags?: number): Promise<void>;
+  function isModuleInstalled(name: string): Promise<boolean>;
+  function uninstallModule(name: string): Promise<void>;
+}
 
 declare namespace browser.runtime {
   const lastError: string | null;

@@ -11,8 +11,8 @@
   "repository": "ctrlxc/thunderbird-web-ext-types",
   "license": "MPL-2.0",
   "devDependencies": {
-    "tslint": "4.5.1",
-    "typescript": "2.3.0"
+    "tslint": "^6.1.1",
+    "typescript": "^3.8.3"
   },
   "scripts": {
     "lint": "tslint --project tsconfig.json",
