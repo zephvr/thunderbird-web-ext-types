@@ -3,9 +3,7 @@
 [![Build Status][build-badge]][build-url]
 [![Npm Version][npm-badge]][npm-url]
 
-TypeScript type definitions for Thunderbird WebExtensions, based on `webext-docs`__ documentation.
-
-__ https://thunderbird-webextensions.readthedocs.io
+TypeScript type definitions for Thunderbird WebExtensions, based on [webext-docs](https://thunderbird-webextensions.readthedocs.io) documentation and [web-ext-type](kelseasy/web-ext-types).
 
 ## Requirements
 
