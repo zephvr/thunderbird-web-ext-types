@@ -1,9 +1,11 @@
-# web-ext-types
+# thunderbird-web-ext-types
 
 [![Build Status][build-badge]][build-url]
 [![Npm Version][npm-badge]][npm-url]
 
-TypeScript type definitions for WebExtensions, based on MDN's documentation.
+TypeScript type definitions for Thunderbird WebExtensions, based on `webext-docs`__ documentation.
+
+__ https://thunderbird-webextensions.readthedocs.io
 
 ## Requirements
 
@@ -16,20 +18,20 @@ There is an npm package available, which means you can grab it from there:
 
 ```sh
 # yarn version
-yarn add web-ext-types --dev
+yarn add thunderbird-web-ext-types --dev
 
 # npm version
-npm install --save-dev web-ext-types
+npm install --save-dev thunderbird-web-ext-types
 ```
 
 Though if you want to use the git version, simply do:
 
 ```sh
 # yarn version
-yarn add kelseasy/web-ext-types --dev
+yarn add ctrlxc/thunderbird-web-ext-types --dev
 
 # npm version
-npm install --save-dev kelseasy/web-ext-types
+npm install --save-dev ctrlxc/thunderbird-web-ext-types
 ```
 
 As this is not a [`DefinitelyTyped`][definitely-typed] package, you will have to
@@ -40,7 +42,7 @@ option.
 {
   "compilerOptions": {
     // You have to explicitly set @types to get DefinitelyTyped type definitions
-    "typeRoots": ["node_modules/@types", "node_modules/web-ext-types"],
+    "typeRoots": ["node_modules/@types", "node_modules/thunderbird-web-ext-types"],
   }
 }
 ```

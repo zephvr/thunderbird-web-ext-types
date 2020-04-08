@@ -66,7 +66,7 @@ declare namespace browser.browserAction {
   type OnClickData = {
     modifiers: ModfierType[];
     button?: number;
-  };
+  }; // NOTE: Added in Thunderbird 74.0b2
 
   type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
@@ -89,7 +89,10 @@ declare namespace browser.browserAction {
   function isEnabled(details: Details): Promise<boolean>;
   function openPopup(): Promise<void>;
 
-  const onClicked: EvListener<(tab: browser.tabs.Tab, info?: OnClickData) => void>;
+  const onClicked: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    info?: OnClickData // NOTE: Added in Thunderbird 74.0b2
+  ) => void>;
 }
 
 declare namespace browser.cloudFile {
@@ -133,6 +136,13 @@ declare namespace browser.commands {
     shortcut?: string;
   };
 
+  function update(detail: {
+    name: string;
+    description?: string;
+    shortcut?: string;
+  }): Promise<void>;
+
+  function reset(name: string): Promise<void>;
   function getAll(): Promise<Command[]>;
 
   const onCommand: Listener<string>;
@@ -143,10 +153,10 @@ declare namespace browser.compose {
     bcc: ComposeRecipientList;
     body: string;
     cc: ComposeRecipientList;
-    followupTo: ComposeRecipientList;
-    isPlainText: boolean;
-    newsgroups: string | string[];
-    plainTextBody: string;
+    followupTo: ComposeRecipientList; // NOTE: Added in Thunderbird 74
+    isPlainText: boolean; // NOTE: Added in Thunderbird 75
+    newsgroups: string | string[]; // NOTE: Added in Thunderbird 74
+    plainTextBody: string; // NOTE: Added in Thunderbird 75
     replyTo: ComposeRecipientList;
     subject: string;
     to: ComposeRecipientList;
@@ -154,15 +164,21 @@ declare namespace browser.compose {
 
   type ComposeRecipient = string | { id: string; type: "contact" | "mailingList"; };
 
-  type ComposeRecipientList = string | ComposeRecipient[];
+  type ComposeRecipientList = string | ComposeRecipient[]; // NOTE: Added in Thunderbird 74
 
   function beginNew(details?: ComposeDetails): Promise<void>;
   function beginReply(messageId?: number, replyType?: "replyToSender" | "replyToList" | "replyToAll"): Promise<void>;
   function beginForward(messageId?: number, forwardType?: "forwardInline" | "forwardAsAttachment", details?: ComposeDetails): Promise<void>;
-  function getComposeDetails(tabId: number): Promise<ComposeDetails>;
-  function setComposeDetails(tabId: number, details: ComposeDetails): Promise<void>;
+  function getComposeDetails(tabId: number): Promise<ComposeDetails>; // NOTE: Added in Thunderbird 74
+  function setComposeDetails(tabId: number, details: ComposeDetails): Promise<void>; // NOTE: Added in Thunderbird 74
 
-  const onBeforeSend: EvListener<(tab: browser.tabs.Tab, details: ComposeDetails) => { cancel?: boolean; details?: ComposeDetails; }>;
+  const onBeforeSend: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    details: ComposeDetails
+  ) => {
+    cancel?: boolean;
+    details?: ComposeDetails;
+  }>; // NOTE: Added in Thunderbird 74
 }
 
 declare namespace browser.composeAction {
@@ -178,7 +194,7 @@ declare namespace browser.composeAction {
   type OnClickData = {
     modifiers: ModfierType[];
     button?: number;
-  };
+  }; // NOTE: Added in Thunderbird 74.0b2
 
   type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
@@ -201,7 +217,10 @@ declare namespace browser.composeAction {
   function isEnabled(details: Details): Promise<boolean>;
   function openPopup(): Promise<void>;
 
-  const onClicked: EvListener<(tab: browser.tabs.Tab, info?: OnClickData) => void>;
+  const onClicked: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    info?: OnClickData // NOTE: Added in Thunderbird 74.0b2
+  ) => void>;
 }
 
 declare namespace browser.contacts {
@@ -234,7 +253,7 @@ declare namespace browser.folders {
     accountId: string;
     path: string;
     name?: string;
-    subFolders?: MailFolder[];
+    subFolders?: MailFolder[]; // NOTE: Added in Thunderbird 74
     type?:
       | "inbox"
       | "drafts"
@@ -555,7 +574,7 @@ declare namespace browser.messageDisplayAction {
   type OnClickData = {
     modifiers: ModfierType[];
     button?: number;
-  };
+  }; // NOTE: Added in Thunderbird 74.0b2
 
   type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
@@ -578,7 +597,10 @@ declare namespace browser.messageDisplayAction {
   function isEnabled(details: Details): Promise<boolean>;
   function openPopup(): Promise<void>;
 
-  const onClicked: EvListener<(tab: browser.tabs.Tab, info?: OnClickData) => void>;
+  const onClicked: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    info?: OnClickData // NOTE: Added in Thunderbird 74.0b2
+  ) => void>;
 }
 
 declare namespace browser.messages {
@@ -590,8 +612,8 @@ declare namespace browser.messages {
     flagged: boolean;
     folder: browser.folders.MailFolder;
     id: number;
-    junk: boolean;
-    junkScore: number;
+    junk: boolean; // NOTE: Added in Thunderbird 74
+    junkScore: number; // NOTE: Added in Thunderbird 74
     read: boolean;
     recipients: string[];
     subject: string;
@@ -651,7 +673,7 @@ declare namespace browser.messages {
     flagged?: boolean;
     junk?: boolean;
     read?: boolean;
-    tags?: string[];
+    tags?: string[]; // NOTE: Added in Thunderbird 74
   }): Promise<void>;
 
   function move(messageIds: number[], destination: browser.folders.MailFolder): Promise<void>;
@@ -660,7 +682,7 @@ declare namespace browser.messages {
   function archive(messageIds: number[]): Promise<void>;
   function listTags(): Promise<MessageTag[]>;
 
-  const onNewMailReceived: EvListener<(folder: browser.folders.MailFolder, messages: MessageList) => void>;
+  const onNewMailReceived: EvListener<(folder: browser.folders.MailFolder, messages: MessageList) => void>; // NOTE: Added in Thunderbird 75
 }
 
 declare namespace browser.tabs {
@@ -703,7 +725,7 @@ declare namespace browser.tabs {
   function create(createProperties: {
     active?: boolean;
     index?: number;
-    // selected: boolean; // WARN: Deprecated.
+    // selected: boolean; // WARNING: Deprecated.
     url?: string;
     windowId?: number;
   }): Promise<Tab>;
