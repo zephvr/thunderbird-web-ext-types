@@ -2,4 +2,4 @@ language: node_js
 os: linux
 dist: trusty
 cache: yarn
-node_js: "13"
+node_js: node
