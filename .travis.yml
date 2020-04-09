@@ -3,4 +3,4 @@ dist: trusty
 sudo: false
 
 cache: yarn
-node_js: "7"
+node_js: "13"

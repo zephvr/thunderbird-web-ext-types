@@ -10,222 +10,123 @@ interface EvListener<T extends Function> {
 
 type Listener<T> = EvListener<(arg: T) => void>;
 
-declare namespace browser.alarms {
-  type Alarm = {
+declare namespace browser.accounts {
+  type MailAccount = {
+    folders: browser.folders.MailFolder[];
+    id: string;
     name: string;
-    scheduledTime: number;
-    periodInMinutes?: number;
+    type: string; // e.g. imap, nntp, or pop3.
   };
 
-  type When = {
-    when?: number;
-    periodInMinutes?: number;
-  };
-  type DelayInMinutes = {
-    delayInMinutes?: number;
-    periodInMinutes?: number;
-  };
-  function create(name?: string, alarmInfo?: When | DelayInMinutes): void;
-  function get(name?: string): Promise<Alarm | undefined>;
-  function getAll(): Promise<Alarm[]>;
-  function clear(name?: string): Promise<boolean>;
-  function clearAll(): Promise<boolean>;
-
-  const onAlarm: Listener<Alarm>;
+  function list(): Promise<MailAccount[]>;
+  function get(accountId: string): Promise<MailAccount>;
 }
 
-declare namespace browser.bookmarks {
-  type BookmarkTreeNodeUnmodifiable = "managed";
-  type BookmarkTreeNodeType = "bookmark" | "folder" | "separator";
-  type BookmarkTreeNode = {
+declare namespace browser.addressBooks {
+  type AddressBookNode = {
     id: string;
+    name: string;
+    type: NodeType;
+    contacts?: browser.contacts.ContactNode[];
+    mailingLists?: browser.mailingLists.MailingListNode[];
     parentId?: string;
-    index?: number;
-    url?: string;
-    title: string;
-    dateAdded?: number;
-    dateGroupModified?: number;
-    unmodifiable?: BookmarkTreeNodeUnmodifiable;
-    children?: BookmarkTreeNode[];
-    type?: BookmarkTreeNodeType;
+    readOnly?: boolean;
   };
 
-  type CreateDetails = {
-    parentId?: string;
-    index?: number;
-    title?: string;
-    type?: BookmarkTreeNodeType;
-    url?: string;
-  };
+  type NodeType =
+    | "addressBook"
+    | "contact"
+    | "mailingList";
 
-  function create(bookmark: CreateDetails): Promise<BookmarkTreeNode>;
-  function get(idOrIdList: string | string[]): Promise<BookmarkTreeNode[]>;
-  function getChildren(id: string): Promise<BookmarkTreeNode[]>;
-  function getRecent(numberOfItems: number): Promise<BookmarkTreeNode[]>;
-  function getSubTree(id: string): Promise<[BookmarkTreeNode]>;
-  function getTree(): Promise<[BookmarkTreeNode]>;
+  type AddressBookProperties = { name: string, [key: string]: string };
 
-  type Destination =
-    | {
-        parentId: string;
-        index?: number;
-      }
-    | {
-        index: number;
-        parentId?: string;
-      };
-  function move(
-    id: string,
-    destination: Destination
-  ): Promise<BookmarkTreeNode>;
-  function remove(id: string): Promise<void>;
-  function removeTree(id: string): Promise<void>;
-  function search(
-    query:
-      | string
-      | {
-          query?: string;
-          url?: string;
-          title?: string;
-        }
-  ): Promise<BookmarkTreeNode[]>;
-  function update(
-    id: string,
-    changes: { title: string; url: string }
-  ): Promise<BookmarkTreeNode>;
+  function openUI(): Promise<void>;
+  function closeUI(): Promise<void>;
+  function list(complete?: boolean): Promise<AddressBookNode[]>;
+  function get(id: string, complete?: boolean): Promise<AddressBookNode>;
+  function create(properties: AddressBookProperties): Promise<string>;
+  function update(id: string, properties: AddressBookProperties): Promise<void>;
+  // function delete(id: string): Promise<void>; // FIXME: reverved "delete".
 
-  const onCreated: EvListener<(id: string, bookmark: BookmarkTreeNode) => void>;
-  const onRemoved: EvListener<
-    (
-      id: string,
-      removeInfo: {
-        parentId: string;
-        index: number;
-        node: BookmarkTreeNode;
-      }
-    ) => void
-  >;
-  const onChanged: EvListener<
-    (
-      id: string,
-      changeInfo: {
-        title: string;
-        url?: string;
-      }
-    ) => void
-  >;
-  const onMoved: EvListener<
-    (
-      id: string,
-      moveInfo: {
-        parentId: string;
-        index: number;
-        oldParentId: string;
-        oldIndex: number;
-      }
-    ) => void
-  >;
+  const onCreated: Listener<AddressBookNode>;
+  const onUpdated: Listener<AddressBookNode>;
+  const onDeleted: Listener<string>;
 }
 
 declare namespace browser.browserAction {
   type ColorArray = [number, number, number, number];
+
+  type Details = {
+    tabId?: number;
+    windowId?: number;
+  };
+
   type ImageDataType = ImageData;
 
-  function setTitle(details: { title: string | null; tabId?: number }): void;
-  function getTitle(details: { tabId?: number }): Promise<string>;
+  type OnClickData = {
+    modifiers: ModfierType[];
+    button?: number;
+  }; // NOTE: Added in Thunderbird 74.0b2
 
-  type IconViaPath = {
-    path: string | { [size: number]: string };
-    tabId?: number;
-  };
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
-  type IconViaImageData = {
-    imageData: ImageDataType | { [size: number]: ImageDataType };
-    tabId?: number;
-  };
-
-  type IconReset = {
-    imageData?: {} | null;
-    path?: {} | null;
-    tabId?: number;
-  };
-
-  function setIcon(
-    details: IconViaPath | IconViaImageData | IconReset
-  ): Promise<void>;
-  function setPopup(details: { popup: string | null; tabId?: number }): void;
-  function getPopup(details: { tabId?: number }): Promise<string>;
-  function openPopup(): Promise<void>;
-  function setBadgeText(details: { text: string | null; tabId?: number }): void;
-  function getBadgeText(details: { tabId?: number }): Promise<string>;
+  function setTitle(details: { title: string | null }): Promise<void>;
+  function getTitle(details: Details): Promise<string>;
+  function setIcon(details: {
+    imageData?: ImageDataType | object;
+    path?: string | object;
+  }): Promise<void>;
+  function setPopup(details: { popup: string | null }): Promise<void>;
+  function getPopup(details: Details): Promise<string>;
+  function setBadgeText(details: { text: string }): Promise<void>;
+  function getBadgeText(details: Details): Promise<string>;
   function setBadgeBackgroundColor(details: {
-    color: string | ColorArray | null;
-    tabId?: number;
-  }): void;
-  function getBadgeBackgroundColor(details: {
-    tabId?: number;
-  }): Promise<ColorArray>;
-  function setBadgeTextColor(details: {
-    color: string | ColorArray;
-    tabId?: number;
-  }): void;
-  function setBadgeTextColor(details: {
-    color: string | ColorArray;
-    windowId?: number;
-  }): void;
-  function setBadgeTextColor(details: { color: null; tabId?: number }): void;
-  function getBadgeTextColor(details: { tabId?: string }): Promise<ColorArray>;
-  function getBadgeTextColor(details: {
-    windowId?: string;
-  }): Promise<ColorArray>;
-  function enable(tabId?: number): void;
-  function disable(tabId?: number): void;
+    color: string | ColorArray | null
+  }): Promise<void>;
+  function getBadgeBackgroundColor(details: Details): Promise<ColorArray>;
+  function enable(tabId?: number): Promise<void>;
+  function disable(tabId?: number): Promise<void>;
+  function isEnabled(details: Details): Promise<boolean>;
+  function openPopup(): Promise<void>;
 
-  const onClicked: Listener<browser.tabs.Tab>;
+  const onClicked: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    info?: OnClickData // NOTE: Added in Thunderbird 74.0b2
+  ) => void>;
 }
 
-declare namespace browser.browsingData {
-  type DataTypeSet = {
-    cache?: boolean;
-    cookies?: boolean;
-    downloads?: boolean;
-    fileSystems?: boolean;
-    formData?: boolean;
-    history?: boolean;
-    indexedDB?: boolean;
-    localStorage?: boolean;
-    passwords?: boolean;
-    pluginData?: boolean;
-    serverBoundCertificates?: boolean;
-    serviceWorkers?: boolean;
+declare namespace browser.cloudFile {
+  type CloudFile = {
+    data: ArrayBuffer | File;
+    id: number;
+    name: string;
   };
 
-  type DataRemovalOptions = {
-    since?: number;
-    originTypes?: { unprotectedWeb: boolean };
+  type CloudFileAccount = {
+    configured: boolean;
+    id: string;
+    managementUrl: string;
+    name: string;
+    spaceRemaining?: number;
+    spaceUsed?: number;
+    uploadSizeLimit?: number;
   };
 
-  type ExtraDataRemovalOptions = {
-    hostnames?: string[]
-  }
+  function getAccount(accountId: string): Promise<CloudFileAccount>;
+  function getAllAccounts(): Promise<CloudFileAccount[]>;
+  function updateAccount(accountId: string, updateProperties: {
+    configured?: boolean;
+    managementUrl?: string;
+    spaceRemaining?: number;
+    spaceUsed?: number;
+    uploadSizeLimit?: number;
+  }): Promise<CloudFileAccount>;
 
-  function remove(
-    removalOptions: DataRemovalOptions,
-    dataTypes: DataTypeSet
-  ): Promise<void>;
-  function removeCache(removalOptions?: DataRemovalOptions): Promise<void>;
-  function removeCookies(removalOptions: DataRemovalOptions & ExtraDataRemovalOptions): Promise<void>;
-  function removeLocalStorage(removalOptions: DataRemovalOptions & ExtraDataRemovalOptions): Promise<void>;
-  function removeDownloads(removalOptions: DataRemovalOptions): Promise<void>;
-  function removeFormData(removalOptions: DataRemovalOptions): Promise<void>;
-  function removeHistory(removalOptions: DataRemovalOptions): Promise<void>;
-  function removePasswords(removalOptions: DataRemovalOptions): Promise<void>;
-  function removePluginData(removalOptions: DataRemovalOptions): Promise<void>;
-  function settings(): Promise<{
-    options: DataRemovalOptions;
-    dataToRemove: DataTypeSet;
-    dataRemovalPermitted: DataTypeSet;
-  }>;
+  const onFileUpload: EvListener<(account: CloudFileAccount, fileInfo: CloudFile) => void>;
+  const onFileUploadAbort: EvListener<(account: CloudFileAccount, fileId: number) => void>;
+  const onFileDeleted: EvListener<(account: CloudFileAccount, fileId: number) => void>;
+  const onAccountAdded: EvListener<(account: CloudFileAccount) => void>;
+  const onAccountDeleted: EvListener<(accountId: string) => void>;
 }
 
 declare namespace browser.commands {
@@ -235,12 +136,319 @@ declare namespace browser.commands {
     shortcut?: string;
   };
 
+  function update(detail: {
+    name: string;
+    description?: string;
+    shortcut?: string;
+  }): Promise<void>;
+
+  function reset(name: string): Promise<void>;
   function getAll(): Promise<Command[]>;
 
   const onCommand: Listener<string>;
 }
 
+declare namespace browser.compose {
+  type ComposeDetails = {
+    bcc: ComposeRecipientList;
+    body: string;
+    cc: ComposeRecipientList;
+    followupTo: ComposeRecipientList; // NOTE: Added in Thunderbird 74
+    isPlainText: boolean; // NOTE: Added in Thunderbird 75
+    newsgroups: string | string[]; // NOTE: Added in Thunderbird 74
+    plainTextBody: string; // NOTE: Added in Thunderbird 75
+    replyTo: ComposeRecipientList;
+    subject: string;
+    to: ComposeRecipientList;
+  };
+
+  type ComposeRecipient = string | { id: string; type: "contact" | "mailingList"; };
+
+  type ComposeRecipientList = string | ComposeRecipient[]; // NOTE: Added in Thunderbird 74
+
+  function beginNew(details?: ComposeDetails): Promise<void>;
+  function beginReply(messageId?: number, replyType?: "replyToSender" | "replyToList" | "replyToAll"): Promise<void>;
+  function beginForward(messageId?: number, forwardType?: "forwardInline" | "forwardAsAttachment", details?: ComposeDetails): Promise<void>;
+  function getComposeDetails(tabId: number): Promise<ComposeDetails>; // NOTE: Added in Thunderbird 74
+  function setComposeDetails(tabId: number, details: ComposeDetails): Promise<void>; // NOTE: Added in Thunderbird 74
+
+  const onBeforeSend: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    details: ComposeDetails
+  ) => {
+    cancel?: boolean;
+    details?: ComposeDetails;
+  }>; // NOTE: Added in Thunderbird 74
+}
+
+declare namespace browser.composeAction {
+  type ColorArray = [number, number, number, number];
+
+  type Details = {
+    tabId?: number;
+    windowId?: number;
+  };
+
+  type ImageDataType = ImageData;
+
+  type OnClickData = {
+    modifiers: ModfierType[];
+    button?: number;
+  }; // NOTE: Added in Thunderbird 74.0b2
+
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
+
+  function setTitle(details: { title: string | null }): Promise<void>;
+  function getTitle(details: Details): Promise<string>;
+  function setIcon(details: {
+    imageData?: ImageDataType | object;
+    path?: string | object;
+  }): Promise<void>;
+  function setPopup(details: { popup: string | null }): Promise<void>;
+  function getPopup(details: Details): Promise<string>;
+  function setBadgeText(details: { text: string }): Promise<void>;
+  function getBadgeText(details: Details): Promise<string>;
+  function setBadgeBackgroundColor(details: {
+    color: string | ColorArray | null
+  }): Promise<void>;
+  function getBadgeBackgroundColor(details: Details): Promise<ColorArray>;
+  function enable(tabId?: number): Promise<void>;
+  function disable(tabId?: number): Promise<void>;
+  function isEnabled(details: Details): Promise<boolean>;
+  function openPopup(): Promise<void>;
+
+  const onClicked: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    info?: OnClickData // NOTE: Added in Thunderbird 74.0b2
+  ) => void>;
+}
+
+declare namespace browser.contacts {
+  type ContactNode = {
+    id: string;
+    properties: ContactProperties;
+    type: browser.addressBooks.NodeType;
+    parentId?: string;
+    readOnly?: boolean;
+  };
+
+  type ContactProperties = object[]; // e.g. [{ PreferDisplayName?: string PreferMailFormat?: string, PrimaryEmail?: string, ... }, ... ]
+
+  function list(parentId: string): Promise<ContactNode[]>;
+  function quickSearch(parentId: string, searchString: string): Promise<ContactNode[]>;
+  function quickSearch(searchString: string): Promise<ContactNode[]>;
+  function get(id: string): Promise<ContactNode>;
+  function create(parentId: string, id: string | null, properties: ContactProperties): Promise<string>;
+  function create(parentId: string, properties: ContactProperties): Promise<string>;
+  function update(id: string, properties: ContactProperties): Promise<void>;
+  // function delete(id: string): Promise<void>; // FIXME: reverved "delete".
+
+  const onCreated: EvListener<(node: ContactNode, id: string) => void>;
+  const onUpdated: EvListener<(node: ContactNode) => void>;
+  const onDeleted: EvListener<(parentId: string, id: string) => void>;
+}
+
+declare namespace browser.folders {
+  type MailFolder = {
+    accountId: string;
+    path: string;
+    name?: string;
+    subFolders?: MailFolder[]; // NOTE: Added in Thunderbird 74
+    type?:
+      | "inbox"
+      | "drafts"
+      | "sent"
+      | "trash"
+      | "templates"
+      | "archives"
+      | "junk"
+      | "outbox";
+  };
+
+  function create(parentFolder: MailFolder, childName: string): Promise<void>;
+  function rename(folder: MailFolder, newName: string): Promise<void>;
+  // function delete(folder: MailFolder): Promise<void>; // FIXME: reverved "delete".
+}
+
+// NOTE: can't declare types
+// declare namespace browser.legacy { }
+
+declare namespace browser.mailingLists {
+  type MailingListNode = {
+    description: string;
+    id: string;
+    name: string;
+    nickName: string;
+    type: browser.addressBooks.NodeType;
+    contacts?: browser.contacts.ContactNode[];
+    parentId?: string;
+    readOnly?: boolean;
+  };
+
+  function list(parentId: string): Promise<MailingListNode[]>;
+  function get(id: string): Promise<MailingListNode>;
+
+  function create(parentId: string, properties: {
+    name: string;
+    description?: string;
+    nickName?: string;
+  }): Promise<string>;
+
+  function update(id: string, properties: {
+    name: string;
+    description?: string;
+    nickName?: string;
+  }): Promise<void>;
+
+  // function delete(id: string): Promise<void>; // FIXME: reverved "delete".
+  function addMember(id: string, contactId: string): Promise<void>;
+  function listMembers(id: string): Promise<browser.contacts.ContactNode[]>;
+  function removeMember(id: string, contactId: string): Promise<void>;
+
+  const onCreated: Listener<MailingListNode>;
+  const onUpdated: Listener<MailingListNode>;
+  const onDeleted: EvListener<(parentId: string, id: string) => void>;
+  const onMemberAdded: Listener<MailingListNode>;
+  const onMemberRemoved: EvListener<(parentId: string, id: string) => void>;
+}
+
+declare namespace browser.mailTabs {
+  type MailTab = {
+    active: boolean;
+    displayedFolder: browser.folders.MailFolder;
+    folderPaneVisible: boolean;
+    id: number;
+    layout: "standard" | "wide" | "vertical";
+    messagePaneVisible: boolean;
+    sortOrder: "none" | "ascending" | "descending";
+    sortType:
+      | "none"
+      | "date"
+      | "subject"
+      | "author"
+      | "id"
+      | "thread"
+      | "priority"
+      | "status"
+      | "size"
+      | "flagged"
+      | "unread"
+      | "recipient"
+      | "location"
+      | "tags"
+      | "junkStatus"
+      | "attachments"
+      | "account"
+      | "custom"
+      | "received"
+      | "correspondent";
+    windowId: number;
+  };
+
+  type QuickFilterTextDetail = {
+    text: string;
+    author?: boolean;
+    body?: boolean;
+    recipients?: boolean;
+    subject?: boolean;
+  };
+
+  function query(queryInfo: {
+    active?: boolean;
+    currentWindow?: boolean;
+    lastFocusedWindow?: boolean;
+    windowId?: number;
+  }): Promise<MailTab[]>;
+
+  function update(tabId: number, updateProperties: {
+    displayedFolder?: browser.folders.MailFolder;
+    folderPaneVisible?: boolean;
+    layout?: "standard" | "wide" | "vertical";
+    messagePaneVisible?: boolean;
+    sortOrder?:  "none" | "ascending" | "descending";
+    sortType?:
+      | "none"
+      | "date"
+      | "subject"
+      | "author"
+      | "id"
+      | "thread"
+      | "priority"
+      | "status"
+      | "size"
+      | "flagged"
+      | "unread"
+      | "recipient"
+      | "location"
+      | "tags"
+      | "junkStatus"
+      | "attachments"
+      | "account"
+      | "custom"
+      | "received"
+      | "correspondent";
+  }): Promise<void>;
+
+  function update(updateProperties: {
+    displayedFolder?: browser.folders.MailFolder;
+    folderPaneVisible?: boolean;
+    layout?: "standard" | "wide" | "vertical";
+    messagePaneVisible?: boolean;
+    sortOrder?:  "none" | "ascending" | "descending";
+    sortType?:
+      | "none"
+      | "date"
+      | "subject"
+      | "author"
+      | "id"
+      | "thread"
+      | "priority"
+      | "status"
+      | "size"
+      | "flagged"
+      | "unread"
+      | "recipient"
+      | "location"
+      | "tags"
+      | "junkStatus"
+      | "attachments"
+      | "account"
+      | "custom"
+      | "received"
+      | "correspondent";
+  }): Promise<void>;
+
+  function getSelectedMessages(
+    tabId?: number
+  ): Promise<browser.messages.MessageList>;
+
+  function setQuickFilter(tabId: number, properties: {
+    attachment?: boolean;
+    contact?: boolean;
+    flagged?: boolean;
+    show?: boolean;
+    tags?: boolean;
+    text?: browser.mailTabs.QuickFilterTextDetail;
+    unread?: boolean;
+  }): Promise<void>;
+
+  function setQuickFilter(properties: {
+    attachment?: boolean;
+    contact?: boolean;
+    flagged?: boolean;
+    show?: boolean;
+    tags?: boolean;
+    text?: browser.mailTabs.QuickFilterTextDetail;
+    unread?: boolean;
+  }): Promise<void>;
+
+  const onDisplayedFolderChanged: EvListener<() => void>
+  const onSelectedMessagesChanged: EvListener<() => void>
+}
+
 declare namespace browser.menus {
+  const ACTION_MENU_TOP_LEVEL_LIMIT: number;
+
   type ContextType =
     | "all"
     | "page"
@@ -262,10 +470,10 @@ declare namespace browser.menus {
   type OnClickData = {
     editable: boolean;
     menuItemId: number | string;
-    modifiers: "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl"[];
+    modifiers: ModfierType[];
     button?: number;
     checked?: boolean;
-    displayedFolder?: MailFolder;
+    displayedFolder?: browser.folders.MailFolder;
     frameId?: number;
     frameUrl?: string;
     linkText?: string;
@@ -273,8 +481,8 @@ declare namespace browser.menus {
     mediaType?: string;
     pageUrl?: string;
     parentMenuItemId?: number | string;
-    selectedFolder?: MailFolder;
-    selectedMessages?: MessageList;
+    selectedFolder?: browser.folders.MailFolder;
+    selectedMessages?: browser.messages.MessageList;
     selectionText?: string;
     srcUrl?: string;
     targetElementId?: number;
@@ -282,7 +490,7 @@ declare namespace browser.menus {
     wasChecked?: boolean;
   };
 
-  const ACTION_MENU_TOP_LEVEL_LIMIT: number;
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
 
   function create(
     createProperties: {
@@ -323,7 +531,7 @@ declare namespace browser.menus {
       viewTypes?: browser.extension.ViewType[];
       visible?: boolean;
     }
-  ): Promise<void>; // @@@ Promise?
+  ): Promise<void>;
 
   function remove(menuItemId: number | string): Promise<void>;
 
@@ -339,134 +547,391 @@ declare namespace browser.menus {
 
   function refresh(): Promise<void>;
 
-  const onClicked: EvListener<
-    (info: OnClickData, tab?: browser.tabs.Tab) => void
-  >;
-
+  const onClicked: EvListener<(info: OnClickData, tab?: browser.tabs.Tab) => void>;
   const onShown: EvListener<(info: OnClickData, tab: browser.tabs.Tab) => void>;
-
   const onHidden: EvListener<() => void>;
 }
 
-declare namespace browser.contextualIdentities {
-  type IdentityColor =
-    | "blue"
-    | "turquoise"
-    | "green"
-    | "yellow"
-    | "orange"
-    | "red"
-    | "pink"
-    | "purple";
-  type IdentityIcon =
-    | "fingerprint"
-    | "briefcase"
-    | "dollar"
-    | "cart"
-    | "circle";
+declare namespace browser.messageDisplay {
+  function getDisplayedMessage(tabId: number): Promise<browser.messages.MessageHeader>;
 
-  type ContextualIdentity = {
-    cookieStoreId: string;
-    color: IdentityColor;
-    icon: IdentityIcon;
-    name: string;
-  };
-
-  function create(details: {
-    name: string;
-    color: IdentityColor;
-    icon: IdentityIcon;
-  }): Promise<ContextualIdentity>;
-  function get(cookieStoreId: string): Promise<ContextualIdentity | null>;
-  function query(details: { name?: string }): Promise<ContextualIdentity[]>;
-  function update(
-    cookieStoreId: string,
-    details: {
-      name: string;
-      color: IdentityColor;
-      icon: IdentityIcon;
-    }
-  ): Promise<ContextualIdentity>;
-  function remove(cookieStoreId: string): Promise<ContextualIdentity | null>;
+  const onMessageDisplayed: EvListener<(
+    tabId: number,
+    message: browser.messages.MessageHeader
+  ) => void>;
 }
 
-declare namespace browser.cookies {
-  type Cookie = {
-    name: string;
-    value: string;
-    domain: string;
-    hostOnly: boolean;
-    path: string;
-    secure: boolean;
-    httpOnly: boolean;
-    session: boolean;
-    firstPartyDomain?: string;
-    sameSite: SameSiteStatus
-    expirationDate?: number;
-    storeId: string;
+declare namespace browser.messageDisplayAction {
+  type ColorArray = [number, number, number, number];
+
+  type Details = {
+    tabId?: number;
+    windowId?: number;
   };
 
-  type CookieStore = {
+  type ImageDataType = ImageData;
+
+  type OnClickData = {
+    modifiers: ModfierType[];
+    button?: number;
+  }; // NOTE: Added in Thunderbird 74.0b2
+
+  type ModfierType = "Shift" | "Alt" | "Command" | "Ctrl" | "MacCtrl";
+
+  function setTitle(details: { title: string | null }): Promise<void>;
+  function getTitle(details: Details): Promise<string>;
+  function setIcon(details: {
+    imageData?: ImageDataType | object;
+    path?: string | object;
+  }): Promise<void>;
+  function setPopup(details: { popup: string | null }): Promise<void>;
+  function getPopup(details: Details): Promise<string>;
+  function setBadgeText(details: { text: string }): Promise<void>;
+  function getBadgeText(details: Details): Promise<string>;
+  function setBadgeBackgroundColor(details: {
+    color: string | ColorArray | null
+  }): Promise<void>;
+  function getBadgeBackgroundColor(details: Details): Promise<ColorArray>;
+  function enable(tabId?: number): Promise<void>;
+  function disable(tabId?: number): Promise<void>;
+  function isEnabled(details: Details): Promise<boolean>;
+  function openPopup(): Promise<void>;
+
+  const onClicked: EvListener<(
+    tab: browser.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
+    info?: OnClickData // NOTE: Added in Thunderbird 74.0b2
+  ) => void>;
+}
+
+declare namespace browser.messages {
+  type MessageHeader = {
+    author: string;
+    bccList: string[];
+    ccList: string[];
+    date: Date;
+    flagged: boolean;
+    folder: browser.folders.MailFolder;
+    id: number;
+    junk: boolean; // NOTE: Added in Thunderbird 74
+    junkScore: number; // NOTE: Added in Thunderbird 74
+    read: boolean;
+    recipients: string[];
+    subject: string;
+    tags: string[];
+  };
+
+  type MessageList = {
     id: string;
-    incognito: boolean;
-    tabIds: number[];
+    messages: MessageHeader[];
   };
 
-  type SameSiteStatus = 
-    | 'no_restriction'
-    | 'lax'
-    | 'strict'
-
-  type OnChangedCause =
-    | "evicted"
-    | "expired"
-    | "explicit"
-    | "expired_overwrite"
-    | "overwrite";
-
-  function get(details: {
-    url: string;
+  type MessagePart = {
+    body: string;
+    contentType: string;
+    headers: object;
     name: string;
-    storeId?: string;
-    firstPartyDomain?: string;
-  }): Promise<Cookie | null>;
-  function getAll(details: {
-    url?: string;
-    name?: string;
-    domain?: string;
-    path?: string;
-    secure?: boolean;
-    session?: boolean;
-    storeId?: string;
-    firstPartyDomain?: string;
-  }): Promise<Cookie[]>;
-  function set(details: {
-    domain?: string;
-    expirationDate?: number;
-    firstPartyDomain?: string;
-    httpOnly?: boolean;
-    name?: string;
-    path?: string;
-    sameSite?: SameSiteStatus;
-    secure?: boolean;
-    storeId?: string;
-    url: string;
-    value?: string;
-  }): Promise<Cookie>;
-  function remove(details: {
-    url: string;
-    name: string;
-    storeId?: string;
-    firstPartyDomain?: string;
-  }): Promise<Cookie | null>;
-  function getAllCookieStores(): Promise<CookieStore[]>;
+    partName: string;
+    parts: MessagePart[];
+    size: number;
+  };
 
-  const onChanged: Listener<{
-    removed: boolean;
-    cookie: Cookie;
-    cause: OnChangedCause;
-  }>;
+  type MessageTag = {
+    color: string;
+    key: string;
+    ordinal: string;
+    tag: string;
+  };
+
+  type TagsDetail = {
+    mode: "all" | "any";
+    tags: object;
+  };
+
+  function list(folder: browser.folders.MailFolder): Promise<MessageList>;
+  function continueList(messageListId: string): Promise<MessageList>;
+  function get(messageId: number): Promise<MessageHeader>;
+  function getFull(messageId: number): Promise<MessagePart>;
+  function getRaw(messageId: number): Promise<string>;
+
+  function query(queryInfo: {
+    author?: string;
+    body?: string;
+    flagged?: boolean;
+    folder?: browser.folders.MailFolder;
+    fromDate?: Date;
+    fromMe?: boolean;
+    fullText?: string;
+    recipients?: string;
+    subject?: string;
+    tags?: TagsDetail;
+    toDate?: Date;
+    toMe?: boolean;
+    unread?: boolean;
+  }): Promise<MessageList>;
+
+  function update(messageId: number, newProperties: {
+    flagged?: boolean;
+    junk?: boolean;
+    read?: boolean;
+    tags?: string[]; // NOTE: Added in Thunderbird 74
+  }): Promise<void>;
+
+  function move(messageIds: number[], destination: browser.folders.MailFolder): Promise<void>;
+  function copy(messageIds: number[], destination: browser.folders.MailFolder): Promise<void>;
+  // function delete(messageIds: number[], skipTrash?: boolean): Promise<void>; // FIXME: reverved "delete".
+  function archive(messageIds: number[]): Promise<void>;
+  function listTags(): Promise<MessageTag[]>;
+
+  const onNewMailReceived: EvListener<(folder: browser.folders.MailFolder, messages: MessageList) => void>; // NOTE: Added in Thunderbird 75
 }
+
+declare namespace browser.tabs {
+  const TAB_ID_NONE: number;
+
+  type Tab = {
+    active: boolean;
+    highlighted: boolean;
+    index: number;
+    selected: boolean;
+    favIconUrl?: string;
+    height?: number;
+    id?: number;
+    mailTab?: boolean;
+    status?: string;
+    title?: string;
+    url?: string;
+    width?: number;
+    windowId: number;
+  };
+
+  type TabStatus = "loading" | "complete";
+
+  type UpdateFilter = {
+    properties?: UpdatePropertyName[];
+    tabId?: number;
+    urls?: string[];
+    windowId?: number;
+  };
+
+  type UpdatePropertyName =
+    | "favIconUrl"
+    | "status"
+    | "title";
+
+  type WindowType = "normal" | "popup" | "panel" | "app" | "devtools";
+
+  function get(tabId: number): Promise<Tab>;
+  function getCurrent(): Promise<Tab>;
+  function create(createProperties: {
+    active?: boolean;
+    index?: number;
+    // selected: boolean; // WARNING: Deprecated.
+    url?: string;
+    windowId?: number;
+  }): Promise<Tab>;
+
+  function duplicate(tabId: number): Promise<Tab>;
+
+  function query(queryInfo: {
+    active?: boolean;
+    currentWindow?: boolean;
+    highlighted?: boolean;
+    index?: number;
+    lastFocusedWindow?: boolean;
+    mailTab?: boolean;
+    status?: TabStatus;
+    title?: string;
+    url?: string | string[];
+    windowId?: number;
+    windowType?: WindowType;
+  }): Promise<Tab[]>;
+
+  function update(tabId: number, updateProperties: {
+    active?: boolean;
+    url?: string;
+  }): Promise<Tab>;
+
+  function update(updateProperties: {
+    active?: boolean;
+    url?: string;
+  }): Promise<Tab>;
+
+  function move(tabIds: number | number[], moveProperties: {
+      windowId?: number;
+      index: number;
+  }): Promise<Tab | Tab[]>;
+
+  function reload(tabId?: number, reloadProperties?: {
+    bypassCache?: boolean
+  }): Promise<void>;
+
+  function remove(tabIds: number | number[]): Promise<void>;
+
+  function executeScript(
+    tabId: number,
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<object[]>;
+
+  function executeScript(
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<object[]>;
+
+  function insertCSS(
+    tabId: number,
+    details: browser.extensionTypes.InjectDetailsCSS
+  ): Promise<void>;
+
+  function insertCSS(
+    details: browser.extensionTypes.InjectDetailsCSS
+  ): Promise<void>;
+
+  function removeCSS(
+    tabId: number,
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<void>;
+
+  function removeCSS(
+    details: browser.extensionTypes.InjectDetails
+  ): Promise<void>;
+
+  const onCreated: Listener<Tab>;
+
+  const onUpdated: EvListener<(
+    tabId: number,
+    changeInfo: {
+      favIconUrl?: string;
+      status?: string;
+      url?: string;
+    },
+    tab: Tab
+  ) => void>;
+
+  const onMoved: EvListener<(
+    tabId: number,
+    moveInfo: {
+        fromIndex: number;
+        toIndex: number;
+        windowId: number;
+    }
+  ) => void>;
+
+  const onActivated: Listener<{ tabId: number; windowId: number }>;
+
+  const onDetached: EvListener<(
+    tabId: number,
+    detachInfo: {
+      oldPosition: number;
+      oldWindowId: number;
+    }
+  ) => void>;
+
+  const onAttached: EvListener<(
+    tabId: number,
+    attachInfo: {
+      newPosition: number;
+      newWindowId: number;
+    }
+  ) => void>;
+
+  const onRemoved: EvListener<(
+    tabId: number,
+    removeInfo: {
+      isWindowClosing: boolean;
+      windowId: number;
+    }
+  ) => void>;
+}
+
+declare namespace browser.windows {
+  const WINDOW_ID_NONE: number;
+  const WINDOW_ID_CURRENT: number;
+
+  type CreateType = "normal" | "popup" | "panel" | "detached_panel";
+
+  type Window = {
+    alwaysOnTop: boolean;
+    focused: boolean;
+    incognito: boolean;
+
+    height?: number;
+    id?: number;
+    left?: number;
+    state?: WindowState;
+    tabs?: browser.tabs.Tab[];
+    title?: string;
+    top?: number;
+    type?: WindowType;
+    width?: number;
+  };
+
+  type WindowState =
+    | "normal"
+    | "minimized"
+    | "maximized"
+    | "fullscreen"
+    | "docked";
+
+  type WindowType = "normal" | "popup" | "panel" | "app" | "devtools" | "addressBook" | "messageCompose" | "messageDisplay";
+
+  function get(
+    windowId: number,
+    getInfo?: {
+      populate?: boolean;
+      windowTypes?: WindowType[];
+    }
+  ): Promise<browser.windows.Window>;
+
+  function getCurrent(getInfo?: {
+    populate?: boolean;
+    windowTypes?: WindowType[];
+  }): Promise<browser.windows.Window>;
+
+  function getLastFocused(getInfo?: {
+    populate?: boolean;
+    windowTypes?: WindowType[];
+  }): Promise<browser.windows.Window>;
+
+  function getAll(getInfo?: {
+    populate?: boolean;
+    windowTypes?: WindowType[];
+  }): Promise<browser.windows.Window[]>;
+
+  function create(createData?: {
+    allowScriptsToClose?: boolean;
+    focused?: boolean;
+    height?: number;
+    incognito?: boolean;
+    left?: number;
+    state?: WindowState;
+    tabId?: number;
+    titlePreface?: string;
+    top?: number;
+    type?: CreateType;
+    url?: string | string[];
+    width?: number;
+  }): Promise<browser.windows.Window>;
+
+  function update(
+    windowId: number,
+    updateInfo: {
+      drawAttention?: boolean;
+      focused?: boolean;
+      height?: number;
+      left?: number;
+      state?: WindowState;
+      top?: number;
+      width?: number;
+    }
+  ): Promise<browser.windows.Window>;
+
+  function remove(windowId: number): Promise<void>;
+
+  const onCreated: Listener<browser.windows.Window>;
+  const onRemoved: Listener<number>;
+  const onFocusChanged: Listener<number>;
+}
+
+// The following APIs are also included and work as they do in Firefox
 
 declare namespace browser.contentScripts {
   type RegisteredContentScriptOptions = {
@@ -488,216 +953,6 @@ declare namespace browser.contentScripts {
   function register(
     contentScriptOptions: RegisteredContentScriptOptions
   ): Promise<RegisteredContentScript>;
-}
-
-declare namespace browser.devtools.inspectedWindow {
-  const tabId: number;
-
-  function eval(
-    expression: string
-  ): Promise<
-    [
-      any,
-
-
-        | { isException: boolean; value: string }
-        | { isError: boolean; code: string }
-    ]
-  >;
-
-  function reload(reloadOptions?: {
-    ignoreCache?: boolean;
-    userAgent?: string;
-    injectedScript?: string;
-  }): void;
-}
-
-declare namespace browser.devtools.network {
-  const onNavigated: Listener<string>;
-}
-
-declare namespace browser.devtools.panels {
-  type ExtensionPanel = {
-    onShown: Listener<Window>;
-    onHidden: Listener<void>;
-  };
-
-  function create(
-    title: string,
-    iconPath: string,
-    pagePath: string
-  ): Promise<ExtensionPanel>;
-}
-
-declare namespace browser.downloads {
-  type FilenameConflictAction = "uniquify" | "overwrite" | "prompt";
-
-  type InterruptReason =
-    | "FILE_FAILED"
-    | "FILE_ACCESS_DENIED"
-    | "FILE_NO_SPACE"
-    | "FILE_NAME_TOO_LONG"
-    | "FILE_TOO_LARGE"
-    | "FILE_VIRUS_INFECTED"
-    | "FILE_TRANSIENT_ERROR"
-    | "FILE_BLOCKED"
-    | "FILE_SECURITY_CHECK_FAILED"
-    | "FILE_TOO_SHORT"
-    | "NETWORK_FAILED"
-    | "NETWORK_TIMEOUT"
-    | "NETWORK_DISCONNECTED"
-    | "NETWORK_SERVER_DOWN"
-    | "NETWORK_INVALID_REQUEST"
-    | "SERVER_FAILED"
-    | "SERVER_NO_RANGE"
-    | "SERVER_BAD_CONTENT"
-    | "SERVER_UNAUTHORIZED"
-    | "SERVER_CERT_PROBLEM"
-    | "SERVER_FORBIDDEN"
-    | "USER_CANCELED"
-    | "USER_SHUTDOWN"
-    | "CRASH";
-
-  type DangerType =
-    | "file"
-    | "url"
-    | "content"
-    | "uncommon"
-    | "host"
-    | "unwanted"
-    | "safe"
-    | "accepted";
-
-  type State = "in_progress" | "interrupted" | "complete";
-
-  type DownloadItem = {
-    id: number;
-    url: string;
-    referrer: string;
-    filename: string;
-    incognito: boolean;
-    danger: string;
-    mime: string;
-    startTime: string;
-    endTime?: string;
-    estimatedEndTime?: string;
-    state: string;
-    paused: boolean;
-    canResume: boolean;
-    error?: string;
-    bytesReceived: number;
-    totalBytes: number;
-    fileSize: number;
-    exists: boolean;
-    byExtensionId?: string;
-    byExtensionName?: string;
-  };
-
-  type Delta<T> = {
-    current?: T;
-    previous?: T;
-  };
-
-  type StringDelta = Delta<string>;
-  type DoubleDelta = Delta<number>;
-  type BooleanDelta = Delta<boolean>;
-  type DownloadTime = Date | string | number;
-
-  type DownloadQuery = {
-    query?: string[];
-    startedBefore?: DownloadTime;
-    startedAfter?: DownloadTime;
-    endedBefore?: DownloadTime;
-    endedAfter?: DownloadTime;
-    totalBytesGreater?: number;
-    totalBytesLess?: number;
-    filenameRegex?: string;
-    urlRegex?: string;
-    limit?: number;
-    orderBy?: string;
-    id?: number;
-    url?: string;
-    filename?: string;
-    danger?: DangerType;
-    mime?: string;
-    startTime?: string;
-    endTime?: string;
-    state?: State;
-    paused?: boolean;
-    error?: InterruptReason;
-    bytesReceived?: number;
-    totalBytes?: number;
-    fileSize?: number;
-    exists?: boolean;
-  };
-
-  function download(options: {
-    url: string;
-    filename?: string;
-    conflictAction?: string;
-    saveAs?: boolean;
-    method?: string;
-    headers?: { [key: string]: string };
-    body?: string;
-  }): Promise<number>;
-  function search(query: DownloadQuery): Promise<DownloadItem[]>;
-  function pause(downloadId: number): Promise<void>;
-  function resume(downloadId: number): Promise<void>;
-  function cancel(downloadId: number): Promise<void>;
-  // unsupported: function getFileIcon(downloadId: number, options?: { size?: number }):
-  //              Promise<string>;
-  function open(downloadId: number): Promise<void>;
-  function show(downloadId: number): Promise<void>;
-  function showDefaultFolder(): void;
-  function erase(query: DownloadQuery): Promise<number[]>;
-  function removeFile(downloadId: number): Promise<void>;
-  // unsupported: function acceptDanger(downloadId: number): Promise<void>;
-  // unsupported: function drag(downloadId: number): Promise<void>;
-  // unsupported: function setShelfEnabled(enabled: boolean): void;
-
-  const onCreated: Listener<DownloadItem>;
-  const onErased: Listener<number>;
-  const onChanged: Listener<{
-    id: number;
-    url?: StringDelta;
-    filename?: StringDelta;
-    danger?: StringDelta;
-    mime?: StringDelta;
-    startTime?: StringDelta;
-    endTime?: StringDelta;
-    state?: StringDelta;
-    canResume?: BooleanDelta;
-    paused?: BooleanDelta;
-    error?: StringDelta;
-    totalBytes?: DoubleDelta;
-    fileSize?: DoubleDelta;
-    exists?: BooleanDelta;
-  }>;
-}
-
-declare namespace browser.events {
-  type UrlFilter = {
-    hostContains?: string;
-    hostEquals?: string;
-    hostPrefix?: string;
-    hostSuffix?: string;
-    pathContains?: string;
-    pathEquals?: string;
-    pathPrefix?: string;
-    pathSuffix?: string;
-    queryContains?: string;
-    queryEquals?: string;
-    queryPrefix?: string;
-    querySuffix?: string;
-    urlContains?: string;
-    urlEquals?: string;
-    urlMatches?: string;
-    originAndPathMatches?: string;
-    urlPrefix?: string;
-    urlSuffix?: string;
-    schemes?: string[];
-    ports?: Array<number | number[]>;
-  };
 }
 
 declare namespace browser.extension {
@@ -735,114 +990,6 @@ declare namespace browser.extensionTypes {
   type InjectDetailsCSS = InjectDetails & { cssOrigin?: "user" | "author" };
 }
 
-declare namespace browser.find {
-    type FindOptions = {
-        tabid: number;
-        caseSensitive: boolean;
-        entireWord: boolean;
-        includeRangeData: boolean;
-        includeRectData: boolean;
-    };
-
-    type FindResults = {
-        count: number;
-        rangeData?: RangeData[];
-        rectData?: RectData[];
-    };
-
-    type RangeData = {
-        framePos: number;
-        startTextNodePos: number;
-        endTextNodePos: number;
-        startOffset: number;
-        endOffset: number;
-        text: string;
-    };
-
-    type RectData = {
-        rectsAndTexts: RectsAndTexts;
-        text: string;
-    };
-
-    type RectsAndTexts = {
-        rectList: RectItem[];
-        textList: string[];
-    };
-
-    type RectItem = {
-        top: number;
-        left: number;
-        bottom: number;
-        right: number;
-    };
-
-    function find(query: string, object?: FindOptions): Promise<FindResults>;
-    function highlightResults(): void;
-    function removeHighlighting(): void;
-}
-
-declare namespace browser.history {
-  type TransitionType =
-    | "link"
-    | "typed"
-    | "auto_bookmark"
-    | "auto_subframe"
-    | "manual_subframe"
-    | "generated"
-    | "auto_toplevel"
-    | "form_submit"
-    | "reload"
-    | "keyword"
-    | "keyword_generated";
-
-  type HistoryItem = {
-    id: string;
-    url?: string;
-    title?: string;
-    lastVisitTime?: number;
-    visitCount?: number;
-    typedCount?: number;
-  };
-
-  type VisitItem = {
-    id: string;
-    visitId: string;
-    visitTime?: number;
-    refferingVisitId: string;
-    transition: TransitionType;
-  };
-
-  function search(query: {
-    text: string;
-    startTime?: number | string | Date;
-    endTime?: number | string | Date;
-    maxResults?: number;
-  }): Promise<HistoryItem[]>;
-
-  function getVisits(details: { url: string }): Promise<VisitItem[]>;
-
-  function addUrl(details: {
-    url: string;
-    title?: string;
-    transition?: TransitionType;
-    visitTime?: number | string | Date;
-  }): Promise<void>;
-
-  function deleteUrl(details: { url: string }): Promise<void>;
-
-  function deleteRange(range: {
-    startTime: number | string | Date;
-    endTime: number | string | Date;
-  }): Promise<void>;
-
-  function deleteAll(): Promise<void>;
-
-  const onVisited: Listener<HistoryItem>;
-
-  // TODO: Ensure that urls is not `urls: [string]` instead
-  const onVisitRemoved: Listener<{ allHistory: boolean; urls: string[] }>;
-}
-
 declare namespace browser.i18n {
   type LanguageCode = string;
 
@@ -861,23 +1008,6 @@ declare namespace browser.i18n {
     isReliable: boolean;
     languages: { language: LanguageCode; percentage: number }[];
   }>;
-}
-
-declare namespace browser.identity {
-  function getRedirectURL(): string;
-  function launchWebAuthFlow(details: {
-    url: string;
-    interactive: boolean;
-  }): Promise<string>;
-}
-
-declare namespace browser.idle {
-  type IdleState = "active" | "idle" /* unsupported: | "locked" */;
-
-  function queryState(detectionIntervalInSeconds: number): Promise<IdleState>;
-  function setDetectionInterval(intervalInSeconds: number): void;
-
-  const onStateChanged: Listener<IdleState>;
 }
 
 declare namespace browser.management {
@@ -907,77 +1037,6 @@ declare namespace browser.management {
     showConfirmDialog: boolean;
     dialogMessage: string;
   }): Promise<void>;
-}
-
-declare namespace browser.notifications {
-  type TemplateType = "basic" /* | "image" | "list" | "progress" */;
-
-  type NotificationOptions = {
-    type: TemplateType;
-    message: string;
-    title: string;
-    iconUrl?: string;
-  };
-
-  function create(
-    id: string | null,
-    options: NotificationOptions
-  ): Promise<string>;
-  function create(options: NotificationOptions): Promise<string>;
-
-  function clear(id: string): Promise<boolean>;
-
-  function getAll(): Promise<{ [key: string]: NotificationOptions }>;
-
-  const onClosed: Listener<string>;
-
-  const onClicked: Listener<string>;
-}
-
-declare namespace browser.omnibox {
-  type OnInputEnteredDisposition =
-    | "currentTab"
-    | "newForegroundTab"
-    | "newBackgroundTab";
-  type SuggestResult = {
-    content: string;
-    description: string;
-  };
-
-  function setDefaultSuggestion(suggestion: { description: string }): void;
-
-  const onInputStarted: Listener<void>;
-  const onInputChanged: EvListener<
-    (text: string, suggest: (arg: SuggestResult[]) => void) => void
-  >;
-  const onInputEntered: EvListener<
-    (text: string, disposition: OnInputEnteredDisposition) => void
-  >;
-  const onInputCancelled: Listener<void>;
-}
-
-declare namespace browser.pageAction {
-  type ImageDataType = ImageData;
-
-  function show(tabId: number): void;
-
-  function hide(tabId: number): void;
-
-  function setTitle(details: { tabId: number; title: string }): void;
-
-  function getTitle(details: { tabId: number }): Promise<string>;
-
-  function setIcon(details: {
-    tabId: number;
-    path?: string | object;
-    imageData?: ImageDataType;
-  }): Promise<void>;
-
-  function setPopup(details: { tabId: number; popup: string }): void;
-
-  function getPopup(details: { tabId: number }): Promise<string>;
-
-  const onClicked: Listener<browser.tabs.Tab>;
 }
 
 declare namespace browser.permissions {
@@ -1033,6 +1092,20 @@ declare namespace browser.permissions {
   // Not yet support in Edge and Firefox:
   // const onAdded: Listener<Permissions>;
   // const onRemoved: Listener<Permissions>;
+}
+
+declare namespace browser.pkcs11 {
+  function getModuleSlots(name: string): Promise<{name: string, token?: {
+    name: string;
+    manufacturer: string;
+    HWVersion: string;
+    FWVersion: string;
+    serial: string;
+    isLoggedIn: boolean;
+  }}>;
+  function installModule(name: string, flags?: number): Promise<void>;
+  function isModuleInstalled(name: string): Promise<boolean>;
+  function uninstallModule(name: string): Promise<void>;
 }
 
 declare namespace browser.runtime {
@@ -1403,825 +1476,6 @@ declare namespace browser.runtime {
   const onMessageExternal: EvListener<onMessageEvent>;
 }
 
-declare namespace browser.sessions {
-  type Filter = { maxResults?: number };
-
-  type Session = {
-    lastModified: number;
-    tab: browser.tabs.Tab;
-    window: browser.windows.Window;
-  };
-
-  const MAX_SESSION_RESULTS: number;
-
-  function getRecentlyClosed(filter?: Filter): Promise<Session[]>;
-
-  function restore(sessionId: string): Promise<Session>;
-
-  function setTabValue(
-    tabId: number,
-    key: string,
-    value: string | object
-  ): Promise<void>;
-
-  function getTabValue(
-    tabId: number,
-    key: string
-  ): Promise<void | string | object>;
-
-  function removeTabValue(tabId: number, key: string): Promise<void>;
-
-  function setWindowValue(
-    windowId: number,
-    key: string,
-    value: string | object
-  ): Promise<void>;
-
-  function getWindowValue(
-    windowId: number,
-    key: string
-  ): Promise<void | string | object>;
-
-  function removeWindowValue(windowId: number, key: string): Promise<void>;
-
-  const onChanged: EvListener<() => void>;
-}
-
-declare namespace browser.sidebarAction {
-  type ImageDataType = ImageData;
-
-  function setPanel(details: { panel: string; tabId?: number }): void;
-
-  function getPanel(details: { tabId?: number }): Promise<string>;
-
-  function setTitle(details: { title: string; tabId?: number }): void;
-
-  function getTitle(details: { tabId?: number }): Promise<string>;
-
-  type IconViaPath = {
-    path: string | { [index: number]: string };
-    tabId?: number;
-  };
-
-  type IconViaImageData = {
-    imageData: ImageDataType | { [index: number]: ImageDataType };
-    tabId?: number;
-  };
-
-  function setIcon(details: IconViaPath | IconViaImageData): Promise<void>;
-
-  function open(): Promise<void>;
-
-  function close(): Promise<void>;
-}
-
-declare namespace browser.storage {
-  // Non-firefox implementations don't accept all these types
-  type StorageValue =
-    | string
-    | number
-    | boolean
-    | null
-    | undefined
-    | RegExp
-    | ArrayBuffer
-    | Uint8ClampedArray
-    | Uint8Array
-    | Uint16Array
-    | Uint32Array
-    | Int8Array
-    | Int16Array
-    | Int32Array
-    | Float32Array
-    | Float64Array
-    | DataView
-    | StorageArray
-    | StorageMap
-    | StorageSet
-    | StorageObject;
-
-  // The Index signature makes casting to/from classes or interfaces a pain.
-  // Custom types are OK.
-  interface StorageObject {
-    [key: string]: StorageValue;
-  }
-  // These have to be interfaces rather than types to avoid a circular
-  // definition of StorageValue
-  interface StorageArray extends Array<StorageValue> {}
-  interface StorageMap extends Map<StorageValue, StorageValue> {}
-  interface StorageSet extends Set<StorageValue> {}
-
-  interface Get {
-    <T extends StorageObject>(keys?: string | string[] | null): Promise<T>;
-    /* <T extends StorageObject>(keys: T): Promise<{[K in keyof T]: T[K]}>; */
-    <T extends StorageObject>(keys: T): Promise<T>;
-  }
-
-  type StorageArea = {
-    get: Get;
-    // unsupported: getBytesInUse: (keys: string|string[]|null) => Promise<number>,
-    set: (keys: StorageObject) => Promise<void>;
-    remove: (keys: string | string[]) => Promise<void>;
-    clear: () => Promise<void>;
-  };
-
-  type StorageChange = {
-    oldValue?: any;
-    newValue?: any;
-  };
-
-  const sync: StorageArea;
-  const local: StorageArea;
-  // unsupported: const managed: StorageArea;
-
-  type ChangeDict = { [field: string]: StorageChange };
-  type StorageName = "sync" | "local" /* |"managed" */;
-
-  const onChanged: EvListener<
-    (changes: ChangeDict, areaName: StorageName) => void
-  >;
-}
-
-declare namespace browser.tabs {
-  type MutedInfoReason = "capture" | "extension" | "user";
-  type MutedInfo = {
-    muted: boolean;
-    extensionId?: string;
-    reason: MutedInfoReason;
-  };
-  // TODO: Specify PageSettings properly.
-  type PageSettings = object;
-  type Tab = {
-    active: boolean;
-    audible?: boolean;
-    autoDiscardable?: boolean;
-    cookieStoreId?: string;
-    discarded?: boolean;
-    favIconUrl?: string;
-    height?: number;
-    hidden: boolean;
-    highlighted: boolean;
-    id?: number;
-    incognito: boolean;
-    index: number;
-    isArticle: boolean;
-    isInReaderMode: boolean;
-    lastAccessed: number;
-    mutedInfo?: MutedInfo;
-    openerTabId?: number;
-    pinned: boolean;
-    selected: boolean;
-    sessionId?: string;
-    status?: string;
-    title?: string;
-    url?: string;
-    width?: number;
-    windowId: number;
-  };
-
-  type TabStatus = "loading" | "complete";
-  type WindowType = "normal" | "popup" | "panel" | "devtools";
-  type ZoomSettingsMode = "automatic" | "disabled" | "manual";
-  type ZoomSettingsScope = "per-origin" | "per-tab";
-  type ZoomSettings = {
-    defaultZoomFactor?: number;
-    mode?: ZoomSettingsMode;
-    scope?: ZoomSettingsScope;
-  };
-
-  const TAB_ID_NONE: number;
-
-  function connect(
-    tabId: number,
-    connectInfo?: { name?: string; frameId?: number }
-  ): browser.runtime.Port;
-  function create(createProperties: {
-    active?: boolean;
-    cookieStoreId?: string;
-    index?: number;
-    openerTabId?: number;
-    pinned?: boolean;
-    // deprecated: selected: boolean,
-    url?: string;
-    windowId?: number;
-  }): Promise<Tab>;
-  function captureTab(
-    tabId?: number,
-    options?: browser.extensionTypes.ImageDetails
-  ): Promise<string>;
-  function captureVisibleTab(
-    windowId?: number,
-    options?: browser.extensionTypes.ImageDetails
-  ): Promise<string>;
-  function detectLanguage(tabId?: number): Promise<string>;
-  function duplicate(tabId: number): Promise<Tab>;
-  function executeScript(
-    tabId: number | undefined,
-    details: browser.extensionTypes.InjectDetails
-  ): Promise<object[]>;
-  function get(tabId: number): Promise<Tab>;
-  // deprecated: function getAllInWindow(): x;
-  function getCurrent(): Promise<Tab>;
-  // deprecated: function getSelected(windowId?: number): Promise<browser.tabs.Tab>;
-  function getZoom(tabId?: number): Promise<number>;
-  function getZoomSettings(tabId?: number): Promise<ZoomSettings>;
-  function hide(tabIds: number | number[]): Promise<number[]>;
-  // unsupported: function highlight(highlightInfo: {
-  //     windowId?: number,
-  //     tabs: number[]|number,
-  // }): Promise<browser.windows.Window>;
-  function insertCSS(
-    tabId: number | undefined,
-    details: browser.extensionTypes.InjectDetailsCSS
-  ): Promise<void>;
-  function removeCSS(
-    tabId: number | undefined,
-    details: browser.extensionTypes.InjectDetails
-  ): Promise<void>;
-  function move(
-    tabIds: number | number[],
-    moveProperties: {
-      windowId?: number;
-      index: number;
-    }
-  ): Promise<Tab | Tab[]>;
-  function print(): Promise<void>;
-  function printPreview(): Promise<void>;
-  function query(queryInfo: {
-    active?: boolean;
-    audible?: boolean;
-    // unsupported: autoDiscardable?: boolean,
-    cookieStoreId?: string;
-    currentWindow?: boolean;
-    discarded?: boolean;
-    hidden?: boolean;
-    highlighted?: boolean;
-    index?: number;
-    muted?: boolean;
-    lastFocusedWindow?: boolean;
-    pinned?: boolean;
-    status?: TabStatus;
-    title?: string;
-    url?: string | string[];
-    windowId?: number;
-    windowType?: WindowType;
-  }): Promise<Tab[]>;
-  function reload(
-    tabId?: number,
-    reloadProperties?: { bypassCache?: boolean }
-  ): Promise<void>;
-  function remove(tabIds: number | number[]): Promise<void>;
-  function saveAsPDF(
-    pageSettings: PageSettings
-  ): Promise<"saved" | "replaced" | "canceled" | "not_saved" | "not_replaced">;
-  function sendMessage<T = any, U = object>(
-    tabId: number,
-    message: T,
-    options?: { frameId?: number }
-  ): Promise<U | void>;
-  // deprecated: function sendRequest(): x;
-  function setZoom(
-    tabId: number | undefined,
-    zoomFactor: number
-  ): Promise<void>;
-  function setZoomSettings(
-    tabId: number | undefined,
-    zoomSettings: ZoomSettings
-  ): Promise<void>;
-  function show(tabIds: number | number[]): Promise<void>;
-  function toggleReaderMode(tabId?: number): Promise<void>;
-  function update(
-    tabId: number | undefined,
-    updateProperties: {
-      active?: boolean;
-      // unsupported: autoDiscardable?: boolean,
-      // unsupported: highlighted?: boolean,
-      // unsupported: hidden?: boolean;
-      loadReplace?: boolean;
-      muted?: boolean;
-      openerTabId?: number;
-      pinned?: boolean;
-      // deprecated: selected?: boolean,
-      url?: string;
-    }
-  ): Promise<Tab>;
-
-  const onActivated: Listener<{ tabId: number; windowId: number }>;
-  const onAttached: EvListener<
-    (
-      tabId: number,
-      attachInfo: {
-        newWindowId: number;
-        newPosition: number;
-      }
-    ) => void
-  >;
-  const onCreated: Listener<Tab>;
-  const onDetached: EvListener<
-    (
-      tabId: number,
-      detachInfo: {
-        oldWindowId: number;
-        oldPosition: number;
-      }
-    ) => void
-  >;
-  const onHighlighted: Listener<{ windowId: number; tabIds: number[] }>;
-  const onMoved: EvListener<
-    (
-      tabId: number,
-      moveInfo: {
-        windowId: number;
-        fromIndex: number;
-        toIndex: number;
-      }
-    ) => void
-  >;
-  const onRemoved: EvListener<
-    (
-      tabId: number,
-      removeInfo: {
-        windowId: number;
-        isWindowClosing: boolean;
-      }
-    ) => void
-  >;
-  const onReplaced: EvListener<
-    (addedTabId: number, removedTabId: number) => void
-  >;
-  const onUpdated: EvListener<
-    (
-      tabId: number,
-      changeInfo: {
-        audible?: boolean;
-        discarded?: boolean;
-        favIconUrl?: string;
-        mutedInfo?: MutedInfo;
-        pinned?: boolean;
-        status?: string;
-        title?: string;
-        url?: string;
-      },
-      tab: Tab
-    ) => void
-  >;
-  const onZoomChanged: Listener<{
-    tabId: number;
-    oldZoomFactor: number;
-    newZoomFactor: number;
-    zoomSettings: ZoomSettings;
-  }>;
-}
-
-declare namespace browser.topSites {
-  type MostVisitedURL = {
-    title: string;
-    url: string;
-  };
-  function get(): Promise<MostVisitedURL[]>;
-}
-
-declare namespace browser.webNavigation {
-  type TransitionType = "link" | "auto_subframe" | "form_submit" | "reload";
-  // unsupported: | "typed" | "auto_bookmark" | "manual_subframe"
-  //              | "generated" | "start_page" | "keyword"
-  //              | "keyword_generated";
-
-  type TransitionQualifier =
-    | "client_redirect"
-    | "server_redirect"
-    | "forward_back";
-  // unsupported: "from_address_bar";
-
-  function getFrame(details: {
-    tabId: number;
-    processId: number;
-    frameId: number;
-  }): Promise<{ errorOccured: boolean; url: string; parentFrameId: number }>;
-
-  function getAllFrames(details: {
-    tabId: number;
-  }): Promise<
-    {
-      errorOccured: boolean;
-      processId: number;
-      frameId: number;
-      parentFrameId: number;
-      url: string;
-    }[]
-  >;
-
-  interface NavListener<T> {
-    addListener: (
-      callback: (arg: T) => void,
-      filter?: {
-        url: browser.events.UrlFilter[];
-      }
-    ) => void;
-    removeListener: (callback: (arg: T) => void) => void;
-    hasListener: (callback: (arg: T) => void) => boolean;
-  }
-
-  type DefaultNavListener = NavListener<{
-    tabId: number;
-    url: string;
-    processId: number;
-    frameId: number;
-    timeStamp: number;
-  }>;
-
-  type TransitionNavListener = NavListener<{
-    tabId: number;
-    url: string;
-    processId: number;
-    frameId: number;
-    timeStamp: number;
-    transitionType: TransitionType;
-    transitionQualifiers: TransitionQualifier[];
-  }>;
-
-  const onBeforeNavigate: NavListener<{
-    tabId: number;
-    url: string;
-    processId: number;
-    frameId: number;
-    parentFrameId: number;
-    timeStamp: number;
-  }>;
-
-  const onCommitted: TransitionNavListener;
-
-  const onCreatedNavigationTarget: NavListener<{
-    sourceFrameId: number;
-    // Unsupported: sourceProcessId: number,
-    sourceTabId: number;
-    tabId: number;
-    timeStamp: number;
-    url: string;
-    windowId: number;
-  }>;
-
-  const onDOMContentLoaded: DefaultNavListener;
-
-  const onCompleted: DefaultNavListener;
-
-  const onErrorOccurred: DefaultNavListener; // error field unsupported
-
-  const onReferenceFragmentUpdated: TransitionNavListener;
-
-  const onHistoryStateUpdated: TransitionNavListener;
-}
-
-declare namespace browser.webRequest {
-  type ResourceType =
-    | "main_frame"
-    | "sub_frame"
-    | "stylesheet"
-    | "script"
-    | "image"
-    | "object"
-    | "xmlhttprequest"
-    | "xbl"
-    | "xslt"
-    | "ping"
-    | "beacon"
-    | "xml_dtd"
-    | "font"
-    | "media"
-    | "websocket"
-    | "csp_report"
-    | "imageset"
-    | "web_manifest"
-    | "other";
-
-  type RequestFilter = {
-    urls: string[];
-    types?: ResourceType[];
-    tabId?: number;
-    windowId?: number;
-  };
-
-  type StreamFilter = {
-    onstart: (event: any) => void;
-    ondata: (event: { data: ArrayBuffer }) => void;
-    onstop: (event: any) => void;
-    onerror: (event: any) => void;
-
-    close(): void;
-    disconnect(): void;
-    resume(): void;
-    suspend(): void;
-    write(data: Uint8Array | ArrayBuffer): void;
-
-    error: string;
-    status:
-      | "uninitialized"
-      | "transferringdata"
-      | "finishedtransferringdata"
-      | "suspended"
-      | "closed"
-      | "disconnected"
-      | "failed";
-  };
-
-  type HttpHeaders = (
-    | { name: string; binaryValue: number[]; value?: string }
-    | { name: string; value: string; binaryValue?: number[] })[];
-
-  type BlockingResponse = {
-    cancel?: boolean;
-    redirectUrl?: string;
-    requestHeaders?: HttpHeaders;
-    responseHeaders?: HttpHeaders;
-    authCredentials?: { username: string; password: string };
-  };
-
-  type UploadData = {
-    bytes?: ArrayBuffer;
-    file?: string;
-  };
-
-  const MAX_HANDLER_BEHAVIOR_CHANGED_CALLS_PER_10_MINUTES: number;
-
-  function handlerBehaviorChanged(): Promise<void>;
-
-  // TODO: Enforce the return result of the addListener call in the contract
-  //       Use an intersection type for all the default properties
-  interface ReqListener<T, U> {
-    addListener: (
-      callback: (arg: T) => void,
-      filter: RequestFilter,
-      extraInfoSpec?: Array<U>
-    ) => BlockingResponse | Promise<BlockingResponse>;
-    removeListener: (callback: (arg: T) => void) => void;
-    hasListener: (callback: (arg: T) => void) => boolean;
-  }
-
-  const onBeforeRequest: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      requestBody?: {
-        error?: string;
-        formData?: { [key: string]: string[] };
-        raw?: UploadData[];
-      };
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-    },
-    "blocking" | "requestBody"
-  >;
-
-  const onBeforeSendHeaders: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-      requestHeaders?: HttpHeaders;
-    },
-    "blocking" | "requestHeaders"
-  >;
-
-  const onSendHeaders: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-      requestHeaders?: HttpHeaders;
-    },
-    "requestHeaders"
-  >;
-
-  const onHeadersReceived: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-      statusLine: string;
-      responseHeaders?: HttpHeaders;
-      statusCode: number;
-    },
-    "blocking" | "responseHeaders"
-  >;
-
-  const onAuthRequired: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      scheme: string;
-      realm?: string;
-      challenger: { host: string; port: number };
-      isProxy: boolean;
-      responseHeaders?: HttpHeaders;
-      statusLine: string;
-      statusCode: number;
-    },
-    "blocking" | "responseHeaders"
-  >;
-
-  const onResponseStarted: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-      ip?: string;
-      fromCache: boolean;
-      statusLine: string;
-      responseHeaders?: HttpHeaders;
-      statusCode: number;
-    },
-    "responseHeaders"
-  >;
-
-  const onBeforeRedirect: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-      ip?: string;
-      fromCache: boolean;
-      statusCode: number;
-      redirectUrl: string;
-      statusLine: string;
-      responseHeaders?: HttpHeaders;
-    },
-    "responseHeaders"
-  >;
-
-  const onCompleted: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-      ip?: string;
-      fromCache: boolean;
-      statusCode: number;
-      statusLine: string;
-      responseHeaders?: HttpHeaders;
-    },
-    "responseHeaders"
-  >;
-
-  const onErrorOccurred: ReqListener<
-    {
-      requestId: string;
-      url: string;
-      method: string;
-      frameId: number;
-      parentFrameId: number;
-      tabId: number;
-      type: ResourceType;
-      timeStamp: number;
-      originUrl: string;
-      ip?: string;
-      fromCache: boolean;
-      error: string;
-    },
-    void
-  >;
-
-  function filterResponseData(requestId: string): StreamFilter;
-}
-
-declare namespace browser.windows {
-  type WindowType = "normal" | "popup" | "panel" | "devtools";
-
-  type WindowState =
-    | "normal"
-    | "minimized"
-    | "maximized"
-    | "fullscreen"
-    | "docked";
-
-  type Window = {
-    id?: number;
-    focused: boolean;
-    top?: number;
-    left?: number;
-    width?: number;
-    height?: number;
-    tabs?: browser.tabs.Tab[];
-    incognito: boolean;
-    type?: WindowType;
-    state?: WindowState;
-    alwaysOnTop: boolean;
-    sessionId?: string;
-  };
-
-  type CreateType = "normal" | "popup" | "panel" | "detached_panel";
-
-  const WINDOW_ID_NONE: number;
-
-  const WINDOW_ID_CURRENT: number;
-
-  function get(
-    windowId: number,
-    getInfo?: {
-      populate?: boolean;
-      windowTypes?: WindowType[];
-    }
-  ): Promise<browser.windows.Window>;
-
-  function getCurrent(getInfo?: {
-    populate?: boolean;
-    windowTypes?: WindowType[];
-  }): Promise<browser.windows.Window>;
-
-  function getLastFocused(getInfo?: {
-    populate?: boolean;
-    windowTypes?: WindowType[];
-  }): Promise<browser.windows.Window>;
-
-  function getAll(getInfo?: {
-    populate?: boolean;
-    windowTypes?: WindowType[];
-  }): Promise<browser.windows.Window[]>;
-
-  // TODO: url and tabId should be exclusive
-  function create(createData?: {
-    allowScriptsToClose?: boolean;
-    url?: string | string[];
-    tabId?: number;
-    left?: number;
-    top?: number;
-    width?: number;
-    height?: number;
-    // unsupported: focused?: boolean,
-    incognito?: boolean;
-    titlePreface?: string;
-    type?: CreateType;
-    state?: WindowState;
-  }): Promise<browser.windows.Window>;
-
-  function update(
-    windowId: number,
-    updateInfo: {
-      left?: number;
-      top?: number;
-      width?: number;
-      height?: number;
-      focused?: boolean;
-      drawAttention?: boolean;
-      state?: WindowState;
-    }
-  ): Promise<browser.windows.Window>;
-
-  function remove(windowId: number): Promise<void>;
-
-  const onCreated: Listener<browser.windows.Window>;
-
-  const onRemoved: Listener<number>;
-
-  const onFocusChanged: Listener<number>;
-}
-
 declare namespace browser.theme {
   type Theme = {
     images: ThemeImages;
@@ -2275,75 +1529,4 @@ declare namespace browser.theme {
   function update(windowId: number, theme: Theme): Promise<void>;
   function reset(): Promise<void>;
   function reset(windowId: number): Promise<void>;
-}
-
-// ---------------------------------------------------------------------------------------
-/* eslint-disable no-redeclare */
-/* eslint-disable @typescript-eslint/member-delimiter-style */
-declare namespace browser.folders {
-  type MailFolder = {
-    accountId: string
-    path: string
-    name?: string
-    subFolders?: MailFolder[]
-    type?: string
-  }
-}
-
-declare namespace browser.mailTabs {
-  type MailTab = {
-    active: boolean
-    displayedFolder: browser.folders.MailFolder
-    folderPaneVisible: boolean
-    id: number
-    layout: string
-    messagePaneVisible: boolean
-    sortOrder: string
-    sortType: string
-    windowId: number
-  }
-
-  function query(queryInfo: {
-    active?: boolean
-    currentWindow?: boolean
-    lastFocusedWindow?: boolean
-    windowId?: number
-  }): Promise<MailTab[]>
-
-  function getSelectedMessages(
-    tabId?: number
-  ): Promise<browser.messages.MessageList>
-
-  const onDisplayedFolderChanged: EvListener<() => void>
-  const onSelectedMessagesChanged: EvListener<() => void>
-}
-
-declare namespace browser.messageDisplay {
-  const onMessageDisplayed: EvListener<(
-    tabId: number,
-    message: browser.messages.MessageHeader
-  ) => void>
-}
-
-declare namespace browser.messages {
-  type MessageList = {
-    id: string
-    messages: MessageHeader[]
-  }
-
-  type MessageHeader = {
-    author: string
-    bccList: string[]
-    ccList: string[]
-    date: Date
-    flagged: boolean
-    folder: browser.folders.MailFolder
-    id: number
-    junk: boolean
-    junkScore: number
-    read: boolean
-    recipients: string[]
-    subject: string
-    tags: string[]
-  }
 }

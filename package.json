@@ -1,14 +1,14 @@
 {
-  "name": "web-ext-types",
-  "author": "Kelsey Zapata <key@kelseasy.org> (https://kelseyz.org)",
-  "version": "3.2.1",
-  "description": "TypeScript type definitions for WebExtensions",
+  "name": "thunderbird-web-ext-types",
+  "author": "@ctrlxc",
+  "version": "1.0.0",
+  "description": "TypeScript type definitions for Thunderbird WebExtensions",
   "keywords": [
-    "firefox",
+    "thunderbird",
     "typescript",
     "webextension"
   ],
-  "repository": "kelseasy/web-ext-types",
+  "repository": "ctrlxc/thunderbird-web-ext-types",
   "license": "MPL-2.0",
   "devDependencies": {
     "tslint": "4.5.1",
