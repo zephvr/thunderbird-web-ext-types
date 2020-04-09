@@ -45,8 +45,8 @@ option.
 }
 ```
 
-[build-badge]: https://travis-ci.org/kelseasy/web-ext-types.svg?branch=master
-[build-url]: https://travis-ci.org/kelseasy/web-ext-types
+[build-badge]: https://travis-ci.org/ctrlxc/thunderbird-web-ext-types.svg?branch=master
+[build-url]: https://travis-ci.org/ctrlxc/thunderbird-web-ext-types
 [definitely-typed]: https://github.com/DefinitelyTyped/DefinitelyTyped/
-[npm-badge]: https://img.shields.io/npm/v/web-ext-types.svg
-[npm-url]: https://www.npmjs.com/package/web-ext-types
+[npm-badge]: https://img.shields.io/npm/v/thunderbird-web-ext-types.svg
+[npm-url]: https://www.npmjs.com/package/thunderbird-web-ext-types
