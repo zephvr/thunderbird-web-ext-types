@@ -178,7 +178,10 @@ declare namespace browser.compose {
   ) => {
     cancel?: boolean;
     details?: ComposeDetails;
-  }>; // NOTE: Added in Thunderbird 74
+  } | Promise<{
+    cancel?: boolean;
+    details?: ComposeDetails;
+  }>>; // NOTE: Added in Thunderbird 74
 }
 
 declare namespace browser.composeAction {
