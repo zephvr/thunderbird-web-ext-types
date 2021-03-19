@@ -14,7 +14,7 @@
     ]
   },
   "files": [
-      "global/index.d.ts"
+      "mail-ext-types.d.ts"
   ],
   "exclude": [
     "node_modules"

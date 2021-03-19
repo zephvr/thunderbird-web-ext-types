@@ -1,42 +1,29 @@
-# thunderbird-web-ext-types
+# thunderbird-mail-ext-types
 
-[![Build Status][build-badge]][build-url]
-[![Npm Version][npm-badge]][npm-url]
+TypeScript type definitions for Thunderbird WebExtensions, based on
+[thundernest/webext-docs](https://thunderbird-webextensions.readthedocs.io)
+documentation and schema files in Thunderbird's source.
 
-TypeScript type definitions for Thunderbird WebExtensions, based on [thundernest/webext-docs](https://thunderbird-webextensions.readthedocs.io) documentation.
+This is a fork of [ctrlxc](https://github.com/ctrlxc/thunderbird-web-ext-types).
+
+I've added a few more APIs that have been added and changed `browser` to
+`messenger`.
 
 ## Requirements
 
 As this library is using the `object` type and default values for generics,
 `typescript` should at least be on version `2.3` to get the definitions to work.
+I use version 4.5+
 
 ## Install it
 
-There is an npm package available, which means you can grab it from there:
-
-```sh
-# yarn version
-yarn add thunderbird-web-ext-types --dev
-
-# npm version
-npm install --save-dev thunderbird-web-ext-types
-```
-
-Though if you want to use the git version, simply do:
-
-```sh
-# yarn version
-yarn add ctrlxc/thunderbird-web-ext-types --dev
-
-# npm version
-npm install --save-dev ctrlxc/thunderbird-web-ext-types
-```
+Grab mail-ext-types.d from this repo.
 
 As this is not a [`DefinitelyTyped`][definitely-typed] package, you will have to
 include the type definition in your `tsconfig.json` by hand, via a `typeRoots`
 option.
 
-```js
+```json
 {
   "compilerOptions": {
     // You have to explicitly set @types to get DefinitelyTyped type definitions
@@ -45,8 +32,9 @@ option.
 }
 ```
 
-[build-badge]: https://travis-ci.org/ctrlxc/thunderbird-web-ext-types.svg?branch=master
-[build-url]: https://travis-ci.org/ctrlxc/thunderbird-web-ext-types
+# Bugs
+
+Probably. Also likely incomplete.
+
+
 [definitely-typed]: https://github.com/DefinitelyTyped/DefinitelyTyped/
-[npm-badge]: https://img.shields.io/npm/v/thunderbird-web-ext-types.svg
-[npm-url]: https://www.npmjs.com/package/thunderbird-web-ext-types
