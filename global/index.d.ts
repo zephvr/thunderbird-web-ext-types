@@ -168,11 +168,15 @@ declare namespace messenger.compose {
 
   type ComposeRecipientList = string | ComposeRecipient[]; // NOTE: Added in Thunderbird 74
 
+  type ComposeAttachment = { id: number, name: string, size: number, getFile: () => File}
+
   function beginNew(details?: ComposeDetails): Promise<void>;
   function beginReply(messageId?: number, replyType?: "replyToSender" | "replyToList" | "replyToAll"): Promise<void>;
   function beginForward(messageId?: number, forwardType?: "forwardInline" | "forwardAsAttachment", details?: ComposeDetails): Promise<void>;
   function getComposeDetails(tabId: number): Promise<ComposeDetails>; // NOTE: Added in Thunderbird 74
   function setComposeDetails(tabId: number, details: ComposeDetails): Promise<void>; // NOTE: Added in Thunderbird 74
+  function listAttachments(tabId: number): Promise<ComposeAttachment[]>;
+  function updateAttachment(tabId: number, attachmentId: number, data: {file: File, name: string}): Promise<ComposeAttachment>
 
   const onBeforeSend: EvListener<(
     tab: messenger.tabs.Tab, // NOTE: Added in Thunderbird 74.0b2
